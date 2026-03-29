@@ -2,10 +2,10 @@ local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/twis
  
 --// Window creation
 local Window = Rayfield:CreateWindow({
-    Name = "Pirno.ccx",
+    Name = "https://t.me/bandits9script",
     Icon = 0,
     LoadingTitle = "loading pirno.ccx (Blox Strike)",
-    LoadingSubtitle = "by .Sparky9971",
+    LoadingSubtitle = "by .ragfa9",
     ShowText = "Menu",
     Theme = "Amethyst",
     ToggleUIKeybind = Enum.KeyCode.RightShift,
@@ -13,8 +13,8 @@ local Window = Rayfield:CreateWindow({
     DisableBuildWarnings = false,
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "Pirno.ccx",
-        FileName = "Pirno.ccx"
+        FolderName = "https://t.me/bandits9script",
+        FileName = "https://t.me/bandits9script"
     }
 })
  
@@ -38,7 +38,7 @@ local Tab_Combat  = Window:CreateTab("Combat", "crosshair")
 local Tab_Skins   = Window:CreateTab("Skins", "swords")
 local Tab_Visuals = Window:CreateTab("Visuals", "eye")
  
-Tab_Skins:CreateLabel("this skin changer script by twistedk1d (not made me)", "code", Color3.fromRGB(80,80,80), false)
+Tab_Skins:CreateLabel("nu okey ya spizdil i sto(gay)", "code", Color3.fromRGB(80,80,80), false)
  
 --// ==========================================
 --// SHARED LOGIC (TEAM CHECK)
