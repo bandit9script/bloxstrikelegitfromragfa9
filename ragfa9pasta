@@ -221,20 +221,10 @@ local AspectEnabled = false
 local AspectValue = 1
 local AspectConnection = nil
 
-local function ApplyAspectRatio(value)
-    if not AspectEnabled then return end
-    -- Apply stretch effect by modifying camera viewport
-    local viewportSize = camera.ViewportSize
-    local stretch = value
-    -- This creates the stretched effect by modifying the camera's CFrame
-    -- Similar to the original script but with adjustable value
-end
-
 local function StartAspectEffect()
     if AspectConnection then AspectConnection:Disconnect() end
     AspectConnection = RunService.RenderStepped:Connect(function()
         if AspectEnabled then
-            -- Apply the stretch effect
             camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, AspectValue, 0, 0, 0, 1)
         end
     end)
@@ -283,37 +273,32 @@ Tab_Chams:CreateToggle({
     end
 })
 
-Tab_Chams:CreateSection("Weapon Colors")
+Tab_Chams:CreateSection("Weapon Color")
 
-local weaponColors = {
-    {Color3.fromRGB(255, 0, 0), "🔴 Red"},
-    {Color3.fromRGB(0, 255, 0), "🟢 Green"},
-    {Color3.fromRGB(0, 0, 255), "🔵 Blue"},
-    {Color3.fromRGB(255, 255, 0), "🟡 Yellow"},
-    {Color3.fromRGB(255, 0, 255), "🟣 Pink"},
-    {Color3.fromRGB(0, 255, 255), "💠 Cyan"},
-    {Color3.fromRGB(255, 165, 0), "🟠 Orange"},
-    {Color3.fromRGB(255, 255, 255), "⚪ White"},
-    {Color3.fromRGB(128, 0, 128), "🟣 Purple"},
-    {Color3.fromRGB(0, 255, 128), "🟢 Mint"}
-}
+-- Color Picker for Weapon (без уведомлений)
+local WeaponColorPicker = Tab_Chams:CreateColorPicker({
+    Name = "Select Weapon Color",
+    Color = CurrentWeaponColor,
+    Flag = "WeaponColorPicker",
+    Callback = function(Color)
+        CurrentWeaponColor = Color
+        if WeaponChamsEnabled then
+            UpdateWeaponChams()
+        end
+        -- No notification
+    end
+})
 
-for _, colorData in ipairs(weaponColors) do
-    Tab_Chams:CreateButton({
-        Name = colorData[2],
-        Callback = function()
-            CurrentWeaponColor = colorData[1]
-            if WeaponChamsEnabled then
-                UpdateWeaponChams()
-            end
-            Rayfield:Notify({
-                Title = "Weapon Color Changed",
-                Content = "Color set to " .. colorData[2],
-                Duration = 1.5
-            })
-        end,
-    })
-end
+-- Apply Button for Weapon Color (без уведомлений)
+Tab_Chams:CreateButton({
+    Name = "Apply Weapon Color",
+    Callback = function()
+        if WeaponChamsEnabled then
+            UpdateWeaponChams()
+            -- No notification
+        end
+    end
+})
 
 --// ==========================================
 --// HAND CHAMS SECTION
@@ -340,37 +325,32 @@ Tab_Chams:CreateToggle({
     end
 })
 
-Tab_Chams:CreateSection("Hand Colors")
+Tab_Chams:CreateSection("Hand Color")
 
-local handColors = {
-    {Color3.fromRGB(255, 0, 0), "🔴 Red"},
-    {Color3.fromRGB(0, 255, 0), "🟢 Green"},
-    {Color3.fromRGB(0, 0, 255), "🔵 Blue"},
-    {Color3.fromRGB(255, 255, 0), "🟡 Yellow"},
-    {Color3.fromRGB(255, 0, 255), "🟣 Pink"},
-    {Color3.fromRGB(0, 255, 255), "💠 Cyan"},
-    {Color3.fromRGB(255, 165, 0), "🟠 Orange"},
-    {Color3.fromRGB(255, 255, 255), "⚪ White"},
-    {Color3.fromRGB(128, 0, 128), "🟣 Purple"},
-    {Color3.fromRGB(0, 255, 128), "🟢 Mint"}
-}
+-- Color Picker for Hands (без уведомлений)
+local HandColorPicker = Tab_Chams:CreateColorPicker({
+    Name = "Select Hand Color",
+    Color = CurrentHandColor,
+    Flag = "HandColorPicker",
+    Callback = function(Color)
+        CurrentHandColor = Color
+        if HandChamsEnabled then
+            UpdateHandChams()
+        end
+        -- No notification
+    end
+})
 
-for _, colorData in ipairs(handColors) do
-    Tab_Chams:CreateButton({
-        Name = colorData[2],
-        Callback = function()
-            CurrentHandColor = colorData[1]
-            if HandChamsEnabled then
-                UpdateHandChams()
-            end
-            Rayfield:Notify({
-                Title = "Hand Color Changed",
-                Content = "Color set to " .. colorData[2],
-                Duration = 1.5
-            })
-        end,
-    })
-end
+-- Apply Button for Hand Color (без уведомлений)
+Tab_Chams:CreateButton({
+    Name = "Apply Hand Color",
+    Callback = function()
+        if HandChamsEnabled then
+            UpdateHandChams()
+            -- No notification
+        end
+    end
+})
 
 --// ==========================================
 --// OTHERS TAB - 4:3 ASPECT RATIO
@@ -385,18 +365,10 @@ Tab_Others:CreateToggle({
         AspectEnabled = Value
         if Value then
             StartAspectEffect()
-            Rayfield:Notify({
-                Title = "4:3 Aspect Ratio",
-                Content = "Enabled with value: " .. AspectValue,
-                Duration = 2
-            })
+            -- No notification
         else
             StopAspectEffect()
-            Rayfield:Notify({
-                Title = "4:3 Aspect Ratio",
-                Content = "Disabled",
-                Duration = 1.5
-            })
+            -- No notification
         end
     end
 })
@@ -410,13 +382,7 @@ Tab_Others:CreateSlider({
     Flag = "AspectSlider",
     Callback = function(Value)
         AspectValue = Value
-        if AspectEnabled then
-            Rayfield:Notify({
-                Title = "Aspect Ratio",
-                Content = "Stretch value set to: " .. Value,
-                Duration = 1.5
-            })
-        end
+        -- No notification
     end
 })
 
@@ -799,7 +765,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --// ==========================================
---// SKINS TAB LOGIC (simplified for length)
+--// SKINS TAB LOGIC
 --// ==========================================
 local scriptRunning = false
 local selectedKnife = "Butterfly Knife"
