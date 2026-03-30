@@ -59,90 +59,237 @@ local function getEnemyFolder()
     return nil
 end
  
+-- Функция проверки видимости (не через стены)
+local function isVisible(part)
+    if not part then return false end
+    
+    local origin = camera.CFrame.Position
+    local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {player.Character, camera, part.Parent}
+    raycastParams.IgnoreWater = true
+    
+    local result = Workspace:Raycast(origin, direction, raycastParams)
+    
+    if result and result.Instance then
+        local hitPart = result.Instance
+        local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+        -- Если попали во врага или его часть, значит видим
+        if hitModel and hitModel == part.Parent then
+            return true
+        end
+        return false
+    end
+    return true
+end
+ 
 --// ==========================================
---// AIMBOT & FOV LOGIC
+--// AIMBOT & FOV LOGIC (ИСПРАВЛЕН)
 --// ==========================================
 local AimbotEnabled = false
+local AutoAimEnabled = false
+local MobileAimEnabled = false
 local ShowFOV = false
 local FOV_Radius = 100
 local Smoothing = 3
 local AimKey = Enum.UserInputType.MouseButton2
 local isAiming = false
  
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-FOVCircle.Radius = FOV_Radius
-FOVCircle.Filled = false
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Visible = false
-FOVCircle.Thickness = 1
+-- Создание круга FOV для мобильного аима (статичный)
+local StaticFOVCircle = Drawing.new("Circle")
+StaticFOVCircle.Radius = FOV_Radius
+StaticFOVCircle.Filled = false
+StaticFOVCircle.Color = Color3.fromRGB(255, 255, 255)
+StaticFOVCircle.Visible = false
+StaticFOVCircle.Thickness = 1
+StaticFOVCircle.NumSides = 64
+StaticFOVCircle.Transparency = 0.5
+StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
  
-local function getClosestEnemyToMouse()
+-- Создание круга FOV для обычного аима (следует за мышкой)
+local DynamicFOVCircle = Drawing.new("Circle")
+DynamicFOVCircle.Radius = FOV_Radius
+DynamicFOVCircle.Filled = false
+DynamicFOVCircle.Color = Color3.fromRGB(255, 255, 255)
+DynamicFOVCircle.Visible = false
+DynamicFOVCircle.Thickness = 1
+DynamicFOVCircle.NumSides = 64
+DynamicFOVCircle.Transparency = 0.5
+ 
+-- Функция для получения ближайшего врага в FOV (с проверкой видимости)
+local function getClosestEnemyInFOV(useStaticFOV)
     local closestEnemy = nil
-    local shortestDistance = FOV_Radius
+    local closestDistance = FOV_Radius
     local enemyFolder = getEnemyFolder()
  
-    if not enemyFolder or not AimbotEnabled then return nil end
+    if not enemyFolder then return nil end
+    if not AimbotEnabled and not AutoAimEnabled and not MobileAimEnabled then return nil end
  
+    -- Центр экрана (прицел)
+    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     local mousePos = UserInputService:GetMouseLocation()
+    
+    -- Выбираем центр FOV в зависимости от режима
+    local fovCenter = useStaticFOV and screenCenter or mousePos
  
     for _, enemy in ipairs(enemyFolder:GetChildren()) do
         local hum = enemy:FindFirstChildOfClass("Humanoid")
         local head = enemy:FindFirstChild("Head")
- 
+        
+        -- Проверяем, что враг живой и есть голова
         if hum and hum.Health > 0 and head then
+            -- Получаем позицию головы на экране
             local headPos, onScreen = camera:WorldToViewportPoint(head.Position)
+            
+            -- Проверяем, что голова видна на экране
             if onScreen then
-                local distance = (Vector2.new(headPos.X, headPos.Y) - mousePos).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestEnemy = head
+                -- Вычисляем расстояние от центра FOV до головы врага
+                local distanceToFOV = (Vector2.new(headPos.X, headPos.Y) - fovCenter).Magnitude
+                
+                -- Если враг в радиусе FOV
+                if distanceToFOV <= FOV_Radius then
+                    -- Проверяем видимость (не через стены)
+                    if isVisible(head) then
+                        -- Вычисляем расстояние от центра экрана (прицела) до головы
+                        local distanceToCenter = (Vector2.new(headPos.X, headPos.Y) - screenCenter).Magnitude
+                        
+                        -- Выбираем ближайшего к прицелу
+                        if distanceToCenter < closestDistance then
+                            closestDistance = distanceToCenter
+                            closestEnemy = head
+                        end
+                    end
                 end
             end
         end
     end
+    
     return closestEnemy
 end
  
+-- Отслеживание нажатия кнопки аимбота
 UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == AimKey then isAiming = true end
+    if input.UserInputType == AimKey then 
+        isAiming = true 
+    end
 end)
  
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == AimKey then isAiming = false end
+    if input.UserInputType == AimKey then 
+        isAiming = false 
+    end
 end)
  
+-- Основной цикл аимбота
 RunService.RenderStepped:Connect(function()
+    -- Обновление позиции кругов FOV
     if ShowFOV then
-        FOVCircle.Position = UserInputService:GetMouseLocation()
-        FOVCircle.Radius = FOV_Radius
-        FOVCircle.Visible = true
+        local mousePos = UserInputService:GetMouseLocation()
+        
+        -- Статичный FOV для мобильного аима
+        if MobileAimEnabled then
+            StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            StaticFOVCircle.Radius = FOV_Radius
+            StaticFOVCircle.Visible = true
+        else
+            StaticFOVCircle.Visible = false
+        end
+        
+        -- Динамичный FOV для обычного аима и AUTO AIM
+        if (AimbotEnabled or AutoAimEnabled) and not MobileAimEnabled then
+            DynamicFOVCircle.Position = mousePos
+            DynamicFOVCircle.Radius = FOV_Radius
+            DynamicFOVCircle.Visible = true
+        else
+            DynamicFOVCircle.Visible = false
+        end
     else
-        FOVCircle.Visible = false
+        StaticFOVCircle.Visible = false
+        DynamicFOVCircle.Visible = false
     end
  
-    if not isAiming or not isAlive() or not AimbotEnabled then return end
+    -- Проверка: жив ли игрок
+    if not isAlive() then return end
+    
+    -- Определяем, нужно ли аимить
+    local shouldAim = false
+    local useStaticFOV = false
+    
+    if MobileAimEnabled then
+        -- Мобильный аим: всегда активен, статичный FOV
+        shouldAim = true
+        useStaticFOV = true
+    elseif AutoAimEnabled then
+        -- AUTO AIM: активен всегда без зажатия кнопки, динамичный FOV
+        shouldAim = true
+        useStaticFOV = false
+    elseif AimbotEnabled and isAiming then
+        -- Обычный аим: активен только при зажатии кнопки, динамичный FOV
+        shouldAim = true
+        useStaticFOV = false
+    end
+    
+    if not shouldAim then return end
  
-    local targetHead = getClosestEnemyToMouse()
+    -- Получаем голову ближайшего врага в FOV
+    local targetHead = getClosestEnemyInFOV(useStaticFOV)
+    
     if targetHead then
+        -- Получаем позицию головы на экране
         local headPos = camera:WorldToViewportPoint(targetHead.Position)
-        local mousePos = UserInputService:GetMouseLocation()
- 
-        local moveX = (headPos.X - mousePos.X) / Smoothing
-        local moveY = (headPos.Y - mousePos.Y) / Smoothing
- 
-        if mousemoverel then
-            mousemoverel(moveX, moveY)
+        
+        -- Проверяем, что голова все еще на экране
+        if headPos.Z > 0 then
+            -- Получаем текущую позицию мыши
+            local mousePos = UserInputService:GetMouseLocation()
+            
+            -- Вычисляем разницу между головой и текущей позицией мыши
+            local deltaX = headPos.X - mousePos.X
+            local deltaY = headPos.Y - mousePos.Y
+            
+            -- Плавное движение с выбранной скоростью (Smoothing)
+            local moveX = deltaX / Smoothing
+            local moveY = deltaY / Smoothing
+            
+            -- Двигаем мышь
+            if mousemoverel then
+                mousemoverel(moveX, moveY)
+            end
         end
     end
 end)
  
+--// ==========================================
+--// COMBAT TAB UI
+--// ==========================================
 Tab_Combat:CreateSection("Aimbot Settings")
 Tab_Combat:CreateToggle({
     Name = "Enable Aimbot (Hold Right Click)",
     CurrentValue = false,
     Flag = "AimbotToggle",
-    Callback = function(Value) AimbotEnabled = Value end
+    Callback = function(Value) 
+        AimbotEnabled = Value
+    end
+})
+ 
+Tab_Combat:CreateToggle({
+    Name = "AUTO AIM (Always Active / No Hold)",
+    CurrentValue = false,
+    Flag = "AutoAimToggle",
+    Callback = function(Value) 
+        AutoAimEnabled = Value
+    end
+})
+ 
+Tab_Combat:CreateToggle({
+    Name = "MOBILE AIM (Static FOV / Always Active)",
+    CurrentValue = false,
+    Flag = "MobileAimToggle",
+    Callback = function(Value) 
+        MobileAimEnabled = Value
+    end
 })
  
 Tab_Combat:CreateToggle({
@@ -164,9 +311,9 @@ Tab_Combat:CreateSlider({
  
 Tab_Combat:CreateSlider({
     Name = "Aimbot Smoothing",
-    Range = {1, 10},
+    Range = {1, 20},
     Increment = 1,
-    Suffix = " (Lower is faster)",
+    Suffix = " (1 = мгновенно, 20 = очень плавно)",
     CurrentValue = 3,
     Flag = "AimbotSmoothing",
     Callback = function(Value) Smoothing = Value end
@@ -218,9 +365,13 @@ task.spawn(function()
                     if enemyFolder and model.Parent == enemyFolder then
                         local hum = model:FindFirstChildOfClass("Humanoid")
                         if hum and hum.Health > 0 then
-                            if TriggerBotDelay > 0 then task.wait(TriggerBotDelay / 1000) end
-                            if mouse1click then mouse1click() end
-                            task.wait(0.05)
+                            -- Проверяем видимость головы
+                            local head = model:FindFirstChild("Head")
+                            if head and isVisible(head) then
+                                if TriggerBotDelay > 0 then task.wait(TriggerBotDelay / 1000) end
+                                if mouse1click then mouse1click() end
+                                task.wait(0.05)
+                            end
                         end
                     end
                 end
