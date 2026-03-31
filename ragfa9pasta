@@ -1186,6 +1186,175 @@ Tab_Visuals:CreateToggle({Name = "Show Health", CurrentValue = true, Flag = "Esp
 Tab_Visuals:CreateToggle({Name = "Show Name", CurrentValue = true, Flag = "EspNameToggle", Callback = function(Value) EspName = Value end})
 Tab_Visuals:CreateToggle({Name = "Show Distance", CurrentValue = true, Flag = "EspDistanceToggle", Callback = function(Value) EspDistance = Value end})
 
+--// ==========================================
+--// TRACERS SECTION (В САМОМ НИЗУ VISUALS)
+--// ==========================================
+local TracersEnabled = false
+local TracerColor = Color3.fromRGB(255, 0, 0)
+local TracerThickness = 1.5
+local TracerTransparency = 0.5
+local TracersConnection = nil
+local ScreenGui = nil
+local tracers = {}
+
+local function SetupTracersGui()
+    if ScreenGui then ScreenGui:Destroy() end
+    ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "TracersGui"
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = player.PlayerGui
+end
+
+local function CreateTracerLine()
+    local frame = Instance.new("Frame")
+    frame.BackgroundColor3 = TracerColor
+    frame.BorderSizePixel = 0
+    frame.AnchorPoint = Vector2.new(0.5, 0.5)
+    frame.Visible = true
+    frame.Parent = ScreenGui
+    return frame
+end
+
+local function UpdateTracers()
+    if not TracersEnabled then 
+        -- Только если выключили в меню, тогда скрываем все линии
+        for _, tracer in pairs(tracers) do
+            if tracer then tracer.Visible = false end
+        end
+        return 
+    end
+    
+    local screenCenterBottom = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+    local enemyFolder = getEnemyFolder()
+    
+    if not enemyFolder then return end
+    
+    for _, enemy in ipairs(enemyFolder:GetChildren()) do
+        local hum = enemy:FindFirstChildOfClass("Humanoid")
+        local leftFoot = enemy:FindFirstChild("LeftFoot")
+        local rightFoot = enemy:FindFirstChild("RightFoot")
+        
+        if hum and hum.Health > 0 and (leftFoot or rightFoot) then
+            local foot = leftFoot or rightFoot
+            local vector, onScreen = camera:WorldToViewportPoint(foot.Position)
+            
+            -- Всегда создаем/обновляем линию, даже если враг не на экране
+            local tracer = tracers[enemy]
+            if not tracer then
+                tracer = CreateTracerLine()
+                tracers[enemy] = tracer
+            end
+            
+            if onScreen then
+                local startPos = screenCenterBottom
+                local endPos = Vector2.new(vector.X, vector.Y)
+                
+                local distance = (endPos - startPos).Magnitude
+                local center = (startPos + endPos) / 2
+                local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
+                
+                tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
+                tracer.Position = UDim2.new(0, center.X, 0, center.Y)
+                tracer.Rotation = math.deg(rotation)
+                tracer.BackgroundColor3 = TracerColor
+                tracer.BackgroundTransparency = TracerTransparency
+                tracer.Visible = true
+            else
+                -- Если враг не на экране, линия все равно остается видимой, но направлена к краю
+                -- Или можно просто скрыть, но по твоему запросу они не должны пропадать
+                -- Оставляем видимыми, но направляем к краю экрана
+                local edgeX = math.clamp(vector.X, 10, camera.ViewportSize.X - 10)
+                local edgeY = math.clamp(vector.Y, 10, camera.ViewportSize.Y - 10)
+                local endPos = Vector2.new(edgeX, edgeY)
+                
+                local startPos = screenCenterBottom
+                local distance = (endPos - startPos).Magnitude
+                local center = (startPos + endPos) / 2
+                local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
+                
+                tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
+                tracer.Position = UDim2.new(0, center.X, 0, center.Y)
+                tracer.Rotation = math.deg(rotation)
+                tracer.BackgroundColor3 = TracerColor
+                tracer.BackgroundTransparency = TracerTransparency
+                tracer.Visible = true
+            end
+        else
+            -- Если враг умер, но трейсер должен оставаться? Нет, убираем
+            if tracers[enemy] then
+                tracers[enemy].Visible = false
+            end
+        end
+    end
+    
+    -- Очистка только для умерших врагов
+    for enemy, tracer in pairs(tracers) do
+        if not enemy or not enemy.Parent then
+            if tracer then tracer:Destroy() end
+            tracers[enemy] = nil
+        end
+    end
+end
+
+Tab_Visuals:CreateSection("Tracers Settings")
+
+Tab_Visuals:CreateToggle({
+    Name = "Enable Tracers (To Enemy Feet)",
+    CurrentValue = false,
+    Flag = "TracersToggle",
+    Callback = function(Value)
+        TracersEnabled = Value
+        if Value then
+            SetupTracersGui()
+            if TracersConnection then TracersConnection:Disconnect() end
+            TracersConnection = RunService.RenderStepped:Connect(UpdateTracers)
+        else
+            if TracersConnection then 
+                TracersConnection:Disconnect()
+                TracersConnection = nil
+            end
+            if ScreenGui then ScreenGui:Destroy() end
+            for _, tracer in pairs(tracers) do
+                if tracer then tracer:Destroy() end
+            end
+            tracers = {}
+        end
+    end
+})
+
+Tab_Visuals:CreateColorPicker({
+    Name = "Tracer Color",
+    Color = TracerColor,
+    Flag = "TracerColor",
+    Callback = function(Color)
+        TracerColor = Color
+    end
+})
+
+Tab_Visuals:CreateSlider({
+    Name = "Tracer Thickness",
+    Range = {0.5, 5},
+    Increment = 0.1,
+    Suffix = " px",
+    CurrentValue = 1.5,
+    Flag = "TracerThickness",
+    Callback = function(Value)
+        TracerThickness = Value
+    end
+})
+
+Tab_Visuals:CreateSlider({
+    Name = "Tracer Transparency",
+    Range = {0, 1},
+    Increment = 0.05,
+    Suffix = " (0 = solid, 1 = invisible)",
+    CurrentValue = 0.5,
+    Flag = "TracerTransparency",
+    Callback = function(Value)
+        TracerTransparency = Value
+    end
+})
+
 local AntiFlashEnabled, AntiSmokeEnabled = false, false
 Tab_Visuals:CreateSection("World & Effects")
 Tab_Visuals:CreateToggle({Name = "Anti-Flashbang", CurrentValue = false, Flag = "AntiFlashToggle", Callback = function(Value) AntiFlashEnabled = Value end})
