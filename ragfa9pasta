@@ -1,1385 +1,1568 @@
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/twistedk1d/BloxStrike/refs/heads/main/Source/UI/source.lua"))()
-
---// Window creation
-local Window = Rayfield:CreateWindow({
-    Name = "https://t.me/bandits9script",
-    Icon = 0,
-    LoadingTitle = "loading https://t.me/bandits9script (Blox Strike)",
-    LoadingSubtitle = "by .ragfa9",
-    ShowText = "Menu",
-    Theme = "Amethyst",
-    ToggleUIKeybind = Enum.KeyCode.RightShift,
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings = false,
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "https://t.me/bandits9script",
-        FileName = "https://t.me/bandits9script"
-    }
-})
-
---// Services & Globals
-local RS = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local CAS = game:GetService("ContextActionService")
+-- // ==========================================
+-- // ANTI-CHEAT WARNING GUI (FIRST)
+-- // ==========================================
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
+local LP = Players.LocalPlayer
+local PlayerGui = LP:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 
-local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
-local CharactersFolder = Workspace:WaitForChild("Characters", 10)
+-- Создаем контейнер для предупреждения
+local WarningGui = Instance.new("ScreenGui")
+WarningGui.Name = "AC_Warning_GUI"
+WarningGui.ResetOnSpawn = false
+WarningGui.IgnoreGuiInset = true
+WarningGui.Parent = PlayerGui
 
---// ==========================================
---// WEAPON CHAMS LOGIC
---// ==========================================
-local WeaponChamsEnabled = false
-local CurrentWeaponColor = Color3.fromRGB(255, 0, 0)
-local WeaponChamsConnection = nil
+-- Размытие фона
+local Blur = Instance.new("BlurEffect")
+Blur.Size = 12
+Blur.Parent = Lighting
 
-local function ApplyWeaponNeon(obj, color)
-    local name = obj.Name
-    if name == "Hitbox" or name == "ViewmodelLight" or name == "Light" then
-        return 
-    end
+-- Частицы (снег/пыль)
+local ParticleContainer = Instance.new("Frame")
+ParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+ParticleContainer.BackgroundTransparency = 1
+ParticleContainer.Parent = WarningGui
+
+local function CreateParticle()
+    local particle = Instance.new("Frame")
+    particle.Size = UDim2.new(0, math.random(2, 5), 0, math.random(2, 5))
+    particle.Position = UDim2.new(math.random(), 0, -0.05, 0)
+    particle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    particle.BorderSizePixel = 0
+    particle.Parent = ParticleContainer
     
-    if obj:IsA("BasePart") or obj:IsA("MeshPart") then
-        obj.Material = Enum.Material.Neon
-        obj.Color = color
-        obj.Transparency = 0
-        
-        for _, child in pairs(obj:GetChildren()) do
-            if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then
-                child:Destroy()
-            elseif child:IsA("SpecialMesh") then
-                child.TextureId = ""
-            end
-        end
-        if obj:IsA("MeshPart") then obj.TextureID = "" end
-    end
+    local tween = TweenService:Create(particle, TweenInfo.new(math.random(3, 6), Enum.EasingStyle.Linear), {
+        Position = UDim2.new(particle.Position.X.Scale, 0, 1.05, 0),
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function() particle:Destroy() end)
 end
 
-local function UpdateWeaponChams()
-    if not WeaponChamsEnabled then return end
-    
-    local models = {}
-    for _, obj in pairs(camera:GetChildren()) do
-        if obj:IsA("Model") then table.insert(models, obj) end
+-- Запускаем частицы
+task.spawn(function()
+    while WarningGui.Parent do
+        CreateParticle()
+        task.wait(0.08)
     end
-    
-    if #models > 0 then
-        local newest = models[#models]
+end)
+
+-- Главный квадрат (Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 500, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = WarningGui
+
+-- Скругляем углы
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+-- Красно-белая переливающаяся обводка
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Thickness = 3
+UIStroke.Color = Color3.fromRGB(255, 0, 0)
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+UIStroke.Parent = MainFrame
+
+-- Заголовок
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+TitleLabel.Position = UDim2.new(0, 0, 0, 15)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Text = "⚠️ WARNING / ВНИМАНИЕ ⚠️"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+TitleLabel.TextSize = 26
+TitleLabel.Parent = MainFrame
+
+-- Текст предупреждения
+local TextLabel = Instance.new("TextLabel")
+TextLabel.Name = "TextLabel"
+TextLabel.Size = UDim2.new(0.9, 0, 0.55, 0)
+TextLabel.Position = UDim2.new(0.05, 0, 0.2, 0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Font = Enum.Font.Gotham
+TextLabel.Text = "⚠️ ANTI-CHEAT WARNING / ПРЕДУПРЕЖДЕНИЕ ⚠️\n\n🇬🇧 BloxStrike has a new anti-cheat AI that detects suspicious behavior (wallbangs, unnatural kills, etc). Using cheats can lead to a permanent account ban. I strongly advise you to play legitimately to keep your account safe.\n\n🇷🇺 BloxStrike установил новый AI анти-чит, который детектит подозрительное поведение (убийства сквозь стены, неестественные убийства и т.д.). Использование читов может привести к перманентной блокировке аккаунта. Настоятельно рекомендую играть честно, чтобы сохранить свой аккаунт.\n\n⚠️ YOU HAVE BEEN WARNED! / ВЫ ПРЕДУПРЕЖДЕНЫ! ⚠️"
+TextLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+TextLabel.TextSize = 13
+TextLabel.TextWrapped = true
+TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+TextLabel.TextYAlignment = Enum.TextYAlignment.Top
+TextLabel.Parent = MainFrame
+
+-- Кнопка I UNDERSTAND
+local UnderstandButton = Instance.new("TextButton")
+UnderstandButton.Name = "UnderstandButton"
+UnderstandButton.Size = UDim2.new(0, 200, 0, 45)
+UnderstandButton.Position = UDim2.new(0.5, -100, 1, -65)
+UnderstandButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+UnderstandButton.Text = "I UNDERSTAND"
+UnderstandButton.Font = Enum.Font.GothamBold
+UnderstandButton.TextSize = 16
+UnderstandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+UnderstandButton.AutoButtonColor = false
+UnderstandButton.Parent = MainFrame
+
+-- Скругляем кнопку
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = UnderstandButton
+
+-- Обводка кнопки
+local BtnStroke = Instance.new("UIStroke")
+BtnStroke.Thickness = 2
+BtnStroke.Color = Color3.fromRGB(255, 0, 0)
+BtnStroke.Parent = UnderstandButton
+
+-- Анимация переливания для обводки и кнопки
+task.spawn(function()
+    local hue = 0
+    while WarningGui.Parent do
+        local color = Color3.fromHSV(hue, 1, 1)
+        local finalColor = color:Lerp(Color3.fromRGB(255, 255, 255), 0.5)
         
-        for _, model in pairs(models) do
-            if model ~= newest then
-                local oldW = model:FindFirstChild("Weapon")
-                local oldD = model:FindFirstChild("DummyParts")
-                if oldW then oldW:Destroy() end
-                if oldD then oldD:Destroy() end
-            else
-                for _, child in pairs(model:GetDescendants()) do
-                    if child.Name == "Weapon" or child.Name == "Handle" then
-                        for _, part in pairs(child:GetDescendants()) do
-                            ApplyWeaponNeon(part, CurrentWeaponColor)
+        UIStroke.Color = finalColor
+        BtnStroke.Color = finalColor
+        TitleLabel.TextColor3 = finalColor
+        
+        hue = hue + 0.008
+        if hue > 1 then hue = hue - 1 end
+        task.wait(0.02)
+    end
+end)
+
+-- Эффект свечения кнопки при наведении
+UnderstandButton.MouseEnter:Connect(function()
+    TweenService:Create(UnderstandButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+    TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Thickness = 3}):Play()
+end)
+
+UnderstandButton.MouseLeave:Connect(function()
+    TweenService:Create(UnderstandButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+    TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Thickness = 2}):Play()
+end)
+
+-- Функция плавного исчезновения и загрузки основного меню
+local function FadeOutAndLoadMainMenu()
+    UnderstandButton.Text = "LOADING..."
+    UnderstandButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
+    
+    -- Анимация исчезновения для всех элементов
+    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    -- Растворяем MainFrame
+    local frameTween = TweenService:Create(MainFrame, tweenInfo, {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 0, 0, 0)
+    })
+    frameTween:Play()
+    
+    -- Растворяем контейнер с частицами
+    local particleTween = TweenService:Create(ParticleContainer, tweenInfo, {
+        BackgroundTransparency = 1
+    })
+    particleTween:Play()
+    
+    -- Растворяем обводку
+    local strokeTween = TweenService:Create(UIStroke, tweenInfo, {
+        Transparency = 1
+    })
+    strokeTween:Play()
+    
+    -- Ждем завершения анимации
+    task.wait(0.6)
+    
+    -- Удаляем Warning GUI
+    WarningGui:Destroy()
+    
+    -- Убираем размытие
+    Blur:Destroy()
+    
+    -- Загружаем основное Rayfield меню
+    loadstring([[
+        local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/twistedk1d/BloxStrike/refs/heads/main/Source/UI/source.lua"))()
+
+        --// Window creation
+        local Window = Rayfield:CreateWindow({
+            Name = "https://t.me/bandits9script",
+            Icon = 0,
+            LoadingTitle = "loading https://t.me/bandits9script (Blox Strike)",
+            LoadingSubtitle = "by .ragfa9",
+            ShowText = "Menu",
+            Theme = "Amethyst",
+            ToggleUIKeybind = Enum.KeyCode.RightShift,
+            DisableRayfieldPrompts = false,
+            DisableBuildWarnings = false,
+            ConfigurationSaving = {
+                Enabled = true,
+                FolderName = "https://t.me/bandits9script",
+                FileName = "https://t.me/bandits9script"
+            }
+        })
+
+        --// Services & Globals
+        local RS = game:GetService("ReplicatedStorage")
+        local RunService = game:GetService("RunService")
+        local TweenService = game:GetService("TweenService")
+        local CAS = game:GetService("ContextActionService")
+        local Players = game:GetService("Players")
+        local Workspace = game:GetService("Workspace")
+        local UserInputService = game:GetService("UserInputService")
+
+        local player = Players.LocalPlayer
+        local camera = Workspace.CurrentCamera
+        local CharactersFolder = Workspace:WaitForChild("Characters", 10)
+
+        --// ==========================================
+        --// WEAPON CHAMS LOGIC
+        --// ==========================================
+        local WeaponChamsEnabled = false
+        local CurrentWeaponColor = Color3.fromRGB(255, 0, 0)
+        local WeaponChamsConnection = nil
+
+        local function ApplyWeaponNeon(obj, color)
+            local name = obj.Name
+            if name == "Hitbox" or name == "ViewmodelLight" or name == "Light" then
+                return 
+            end
+            
+            if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                obj.Material = Enum.Material.Neon
+                obj.Color = color
+                obj.Transparency = 0
+                
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then
+                        child:Destroy()
+                    elseif child:IsA("SpecialMesh") then
+                        child.TextureId = ""
+                    end
+                end
+                if obj:IsA("MeshPart") then obj.TextureID = "" end
+            end
+        end
+
+        local function UpdateWeaponChams()
+            if not WeaponChamsEnabled then return end
+            
+            local models = {}
+            for _, obj in pairs(camera:GetChildren()) do
+                if obj:IsA("Model") then table.insert(models, obj) end
+            end
+            
+            if #models > 0 then
+                local newest = models[#models]
+                
+                for _, model in pairs(models) do
+                    if model ~= newest then
+                        local oldW = model:FindFirstChild("Weapon")
+                        local oldD = model:FindFirstChild("DummyParts")
+                        if oldW then oldW:Destroy() end
+                        if oldD then oldD:Destroy() end
+                    else
+                        for _, child in pairs(model:GetDescendants()) do
+                            if child.Name == "Weapon" or child.Name == "Handle" then
+                                for _, part in pairs(child:GetDescendants()) do
+                                    ApplyWeaponNeon(part, CurrentWeaponColor)
+                                end
+                                ApplyWeaponNeon(child, CurrentWeaponColor)
+                            end
                         end
-                        ApplyWeaponNeon(child, CurrentWeaponColor)
                     end
                 end
             end
         end
-    end
-end
 
-local function DisableWeaponChams()
-    local models = {}
-    for _, obj in pairs(camera:GetChildren()) do
-        if obj:IsA("Model") then table.insert(models, obj) end
-    end
-    
-    if #models > 0 then
-        local newest = models[#models]
-        
-        for _, model in pairs(models) do
-            if model ~= newest then
-                local oldW = model:FindFirstChild("Weapon")
-                local oldD = model:FindFirstChild("DummyParts")
-                if oldW then oldW:Destroy() end
-                if oldD then oldD:Destroy() end
-            else
-                for _, child in pairs(model:GetDescendants()) do
-                    if child.Name == "Weapon" or child.Name == "Handle" then
-                        for _, part in pairs(child:GetDescendants()) do
+        local function DisableWeaponChams()
+            local models = {}
+            for _, obj in pairs(camera:GetChildren()) do
+                if obj:IsA("Model") then table.insert(models, obj) end
+            end
+            
+            if #models > 0 then
+                local newest = models[#models]
+                
+                for _, model in pairs(models) do
+                    if model ~= newest then
+                        local oldW = model:FindFirstChild("Weapon")
+                        local oldD = model:FindFirstChild("DummyParts")
+                        if oldW then oldW:Destroy() end
+                        if oldD then oldD:Destroy() end
+                    else
+                        for _, child in pairs(model:GetDescendants()) do
+                            if child.Name == "Weapon" or child.Name == "Handle" then
+                                for _, part in pairs(child:GetDescendants()) do
+                                    if part:IsA("BasePart") then
+                                        part.Material = Enum.Material.Plastic
+                                        part.Color = Color3.fromRGB(255, 255, 255)
+                                        part.Transparency = 0
+                                    end
+                                end
+                                if child:IsA("BasePart") then
+                                    child.Material = Enum.Material.Plastic
+                                    child.Color = Color3.fromRGB(255, 255, 255)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        --// ==========================================
+        --// HAND CHAMS LOGIC
+        --// ==========================================
+        local HandChamsEnabled = false
+        local CurrentHandColor = Color3.fromRGB(180, 0, 255)
+        local HandChamsConnection = nil
+
+        local function ApplyHandNeon(obj, color)
+            if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                obj.Material = Enum.Material.Neon
+                obj.Color = color
+                obj.Transparency = 0
+                
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("SurfaceAppearance") or child:IsA("Texture") or child:IsA("Decal") then
+                        child:Destroy()
+                    elseif child:IsA("SpecialMesh") then
+                        child.TextureId = ""
+                    end
+                end
+                
+                if obj:IsA("MeshPart") then
+                    obj.TextureID = ""
+                end
+            end
+        end
+
+        local function UpdateHandChams()
+            if not HandChamsEnabled then return end
+            
+            for _, model in pairs(camera:GetChildren()) do
+                if model:IsA("Model") then
+                    local leftArm = model:FindFirstChild("Left Arm")
+                    local rightArm = model:FindFirstChild("Right Arm")
+                    
+                    if leftArm then
+                        ApplyHandNeon(leftArm, CurrentHandColor)
+                        for _, part in pairs(leftArm:GetDescendants()) do
+                            ApplyHandNeon(part, CurrentHandColor)
+                        end
+                    end
+                    
+                    if rightArm then
+                        ApplyHandNeon(rightArm, CurrentHandColor)
+                        for _, part in pairs(rightArm:GetDescendants()) do
+                            ApplyHandNeon(part, CurrentHandColor)
+                        end
+                    end
+                end
+            end
+        end
+
+        local function DisableHandChams()
+            for _, model in pairs(camera:GetChildren()) do
+                if model:IsA("Model") then
+                    local leftArm = model:FindFirstChild("Left Arm")
+                    local rightArm = model:FindFirstChild("Right Arm")
+                    
+                    if leftArm then
+                        if leftArm:IsA("BasePart") then
+                            leftArm.Material = Enum.Material.Plastic
+                            leftArm.Color = Color3.fromRGB(255, 255, 255)
+                        end
+                        for _, part in pairs(leftArm:GetDescendants()) do
                             if part:IsA("BasePart") then
                                 part.Material = Enum.Material.Plastic
                                 part.Color = Color3.fromRGB(255, 255, 255)
-                                part.Transparency = 0
                             end
                         end
-                        if child:IsA("BasePart") then
-                            child.Material = Enum.Material.Plastic
-                            child.Color = Color3.fromRGB(255, 255, 255)
+                    end
+                    
+                    if rightArm then
+                        if rightArm:IsA("BasePart") then
+                            rightArm.Material = Enum.Material.Plastic
+                            rightArm.Color = Color3.fromRGB(255, 255, 255)
+                        end
+                        for _, part in pairs(rightArm:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.Material = Enum.Material.Plastic
+                                part.Color = Color3.fromRGB(255, 255, 255)
+                            end
                         end
                     end
                 end
             end
         end
-    end
-end
 
---// ==========================================
---// HAND CHAMS LOGIC
---// ==========================================
-local HandChamsEnabled = false
-local CurrentHandColor = Color3.fromRGB(180, 0, 255)
-local HandChamsConnection = nil
+        --// ==========================================
+        --// 4:3 ASPECT RATIO
+        --// ==========================================
+        local AspectEnabled = false
+        local AspectValue = 1
+        local AspectConnection = nil
 
-local function ApplyHandNeon(obj, color)
-    if obj:IsA("BasePart") or obj:IsA("MeshPart") then
-        obj.Material = Enum.Material.Neon
-        obj.Color = color
-        obj.Transparency = 0
-        
-        for _, child in pairs(obj:GetChildren()) do
-            if child:IsA("SurfaceAppearance") or child:IsA("Texture") or child:IsA("Decal") then
-                child:Destroy()
-            elseif child:IsA("SpecialMesh") then
-                child.TextureId = ""
+        local function StartAspectEffect()
+            if AspectConnection then AspectConnection:Disconnect() end
+            AspectConnection = RunService.RenderStepped:Connect(function()
+                if AspectEnabled then
+                    camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, AspectValue, 0, 0, 0, 1)
+                end
+            end)
+        end
+
+        local function StopAspectEffect()
+            if AspectConnection then
+                AspectConnection:Disconnect()
+                AspectConnection = nil
             end
         end
-        
-        if obj:IsA("MeshPart") then
-            obj.TextureID = ""
-        end
-    end
-end
 
-local function UpdateHandChams()
-    if not HandChamsEnabled then return end
-    
-    for _, model in pairs(camera:GetChildren()) do
-        if model:IsA("Model") then
-            local leftArm = model:FindFirstChild("Left Arm")
-            local rightArm = model:FindFirstChild("Right Arm")
-            
-            if leftArm then
-                ApplyHandNeon(leftArm, CurrentHandColor)
-                for _, part in pairs(leftArm:GetDescendants()) do
-                    ApplyHandNeon(part, CurrentHandColor)
-                end
-            end
-            
-            if rightArm then
-                ApplyHandNeon(rightArm, CurrentHandColor)
-                for _, part in pairs(rightArm:GetDescendants()) do
-                    ApplyHandNeon(part, CurrentHandColor)
-                end
-            end
-        end
-    end
-end
+        --// ==========================================
+        --// TABS
+        --// ==========================================
+        local Tab_Combat  = Window:CreateTab("Combat", "crosshair")
+        local Tab_Skins   = Window:CreateTab("Skins", "swords")
+        local Tab_Visuals = Window:CreateTab("Visuals", "eye")
+        local Tab_Chams = Window:CreateTab("Chams", "eye")
+        local Tab_Others = Window:CreateTab("Others", "settings")
 
-local function DisableHandChams()
-    for _, model in pairs(camera:GetChildren()) do
-        if model:IsA("Model") then
-            local leftArm = model:FindFirstChild("Left Arm")
-            local rightArm = model:FindFirstChild("Right Arm")
-            
-            if leftArm then
-                if leftArm:IsA("BasePart") then
-                    leftArm.Material = Enum.Material.Plastic
-                    leftArm.Color = Color3.fromRGB(255, 255, 255)
-                end
-                for _, part in pairs(leftArm:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Material = Enum.Material.Plastic
-                        part.Color = Color3.fromRGB(255, 255, 255)
+        Tab_Skins:CreateLabel("nu okey ya spizdil i sto(gay)", "code", Color3.fromRGB(80,80,80), false)
+
+        --// ==========================================
+        --// WEAPON CHAMS SECTION
+        --// ==========================================
+        Tab_Chams:CreateSection("Weapon Chams")
+
+        Tab_Chams:CreateToggle({
+            Name = "Enable Weapon Chams",
+            CurrentValue = false,
+            Flag = "WeaponChamsToggle",
+            Callback = function(Value)
+                WeaponChamsEnabled = Value
+                if Value then
+                    UpdateWeaponChams()
+                    if WeaponChamsConnection then WeaponChamsConnection:Disconnect() end
+                    WeaponChamsConnection = RunService.RenderStepped:Connect(UpdateWeaponChams)
+                else
+                    if WeaponChamsConnection then 
+                        WeaponChamsConnection:Disconnect()
+                        WeaponChamsConnection = nil
                     end
+                    DisableWeaponChams()
                 end
             end
-            
-            if rightArm then
-                if rightArm:IsA("BasePart") then
-                    rightArm.Material = Enum.Material.Plastic
-                    rightArm.Color = Color3.fromRGB(255, 255, 255)
+        })
+
+        Tab_Chams:CreateSection("Weapon Color")
+
+        local WeaponColorPicker = Tab_Chams:CreateColorPicker({
+            Name = "Select Weapon Color",
+            Color = CurrentWeaponColor,
+            Flag = "WeaponColorPicker",
+            Callback = function(Color)
+                CurrentWeaponColor = Color
+                if WeaponChamsEnabled then
+                    UpdateWeaponChams()
                 end
-                for _, part in pairs(rightArm:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Material = Enum.Material.Plastic
-                        part.Color = Color3.fromRGB(255, 255, 255)
+            end
+        })
+
+        Tab_Chams:CreateButton({
+            Name = "Apply Weapon Color",
+            Callback = function()
+                if WeaponChamsEnabled then
+                    UpdateWeaponChams()
+                end
+            end
+        })
+
+        --// ==========================================
+        --// HAND CHAMS SECTION
+        --// ==========================================
+        Tab_Chams:CreateSection("Hand Chams")
+
+        Tab_Chams:CreateToggle({
+            Name = "Enable Hand Chams",
+            CurrentValue = false,
+            Flag = "HandChamsToggle",
+            Callback = function(Value)
+                HandChamsEnabled = Value
+                if Value then
+                    UpdateHandChams()
+                    if HandChamsConnection then HandChamsConnection:Disconnect() end
+                    HandChamsConnection = RunService.RenderStepped:Connect(UpdateHandChams)
+                else
+                    if HandChamsConnection then 
+                        HandChamsConnection:Disconnect()
+                        HandChamsConnection = nil
                     end
+                    DisableHandChams()
                 end
             end
-        end
-    end
-end
+        })
 
---// ==========================================
---// 4:3 ASPECT RATIO (STRETCHED RESOLUTION)
---// ==========================================
-local AspectEnabled = false
-local AspectValue = 1
-local AspectConnection = nil
+        Tab_Chams:CreateSection("Hand Color")
 
-local function StartAspectEffect()
-    if AspectConnection then AspectConnection:Disconnect() end
-    AspectConnection = RunService.RenderStepped:Connect(function()
-        if AspectEnabled then
-            camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, AspectValue, 0, 0, 0, 1)
-        end
-    end)
-end
-
-local function StopAspectEffect()
-    if AspectConnection then
-        AspectConnection:Disconnect()
-        AspectConnection = nil
-    end
-end
-
---// ==========================================
---// TABS
---// ==========================================
-local Tab_Combat  = Window:CreateTab("Combat", "crosshair")
-local Tab_Skins   = Window:CreateTab("Skins", "swords")
-local Tab_Visuals = Window:CreateTab("Visuals", "eye")
-local Tab_Chams = Window:CreateTab("Chams", "eye")
-local Tab_Others = Window:CreateTab("Others", "settings")
-
-Tab_Skins:CreateLabel("nu okey ya spizdil i sto(gay)", "code", Color3.fromRGB(80,80,80), false)
-
---// ==========================================
---// WEAPON CHAMS SECTION
---// ==========================================
-Tab_Chams:CreateSection("Weapon Chams")
-
-Tab_Chams:CreateToggle({
-    Name = "Enable Weapon Chams",
-    CurrentValue = false,
-    Flag = "WeaponChamsToggle",
-    Callback = function(Value)
-        WeaponChamsEnabled = Value
-        if Value then
-            UpdateWeaponChams()
-            if WeaponChamsConnection then WeaponChamsConnection:Disconnect() end
-            WeaponChamsConnection = RunService.RenderStepped:Connect(UpdateWeaponChams)
-        else
-            if WeaponChamsConnection then 
-                WeaponChamsConnection:Disconnect()
-                WeaponChamsConnection = nil
-            end
-            DisableWeaponChams()
-        end
-    end
-})
-
-Tab_Chams:CreateSection("Weapon Color")
-
--- Color Picker for Weapon (без уведомлений)
-local WeaponColorPicker = Tab_Chams:CreateColorPicker({
-    Name = "Select Weapon Color",
-    Color = CurrentWeaponColor,
-    Flag = "WeaponColorPicker",
-    Callback = function(Color)
-        CurrentWeaponColor = Color
-        if WeaponChamsEnabled then
-            UpdateWeaponChams()
-        end
-        -- No notification
-    end
-})
-
--- Apply Button for Weapon Color (без уведомлений)
-Tab_Chams:CreateButton({
-    Name = "Apply Weapon Color",
-    Callback = function()
-        if WeaponChamsEnabled then
-            UpdateWeaponChams()
-            -- No notification
-        end
-    end
-})
-
---// ==========================================
---// HAND CHAMS SECTION
---// ==========================================
-Tab_Chams:CreateSection("Hand Chams")
-
-Tab_Chams:CreateToggle({
-    Name = "Enable Hand Chams",
-    CurrentValue = false,
-    Flag = "HandChamsToggle",
-    Callback = function(Value)
-        HandChamsEnabled = Value
-        if Value then
-            UpdateHandChams()
-            if HandChamsConnection then HandChamsConnection:Disconnect() end
-            HandChamsConnection = RunService.RenderStepped:Connect(UpdateHandChams)
-        else
-            if HandChamsConnection then 
-                HandChamsConnection:Disconnect()
-                HandChamsConnection = nil
-            end
-            DisableHandChams()
-        end
-    end
-})
-
-Tab_Chams:CreateSection("Hand Color")
-
--- Color Picker for Hands (без уведомлений)
-local HandColorPicker = Tab_Chams:CreateColorPicker({
-    Name = "Select Hand Color",
-    Color = CurrentHandColor,
-    Flag = "HandColorPicker",
-    Callback = function(Color)
-        CurrentHandColor = Color
-        if HandChamsEnabled then
-            UpdateHandChams()
-        end
-        -- No notification
-    end
-})
-
--- Apply Button for Hand Color (без уведомлений)
-Tab_Chams:CreateButton({
-    Name = "Apply Hand Color",
-    Callback = function()
-        if HandChamsEnabled then
-            UpdateHandChams()
-            -- No notification
-        end
-    end
-})
-
---// ==========================================
---// OTHERS TAB - 4:3 ASPECT RATIO
---// ==========================================
-Tab_Others:CreateSection("Aspect Ratio Settings")
-
-Tab_Others:CreateToggle({
-    Name = "Enable 4:3 Stretched Aspect Ratio",
-    CurrentValue = false,
-    Flag = "AspectToggle",
-    Callback = function(Value)
-        AspectEnabled = Value
-        if Value then
-            StartAspectEffect()
-            -- No notification
-        else
-            StopAspectEffect()
-            -- No notification
-        end
-    end
-})
-
-Tab_Others:CreateSlider({
-    Name = "Stretch Value (0.1 - 1.0)",
-    Range = {0.1, 1.0},
-    Increment = 0.01,
-    Suffix = " (lower = more stretch)",
-    CurrentValue = 1.0,
-    Flag = "AspectSlider",
-    Callback = function(Value)
-        AspectValue = Value
-        -- No notification
-    end
-})
-
-Tab_Others:CreateLabel("ℹ️ Info: Lower stretch value = wider screen effect. 0.5 = classic 4:3 stretched look", "info", Color3.fromRGB(100, 100, 255), false)
-
---// ==========================================
---// SHARED LOGIC (TEAM CHECK)
---// ==========================================
-local function getTFolder() return CharactersFolder:FindFirstChild("Terrorists") end
-local function getCTFolder() return CharactersFolder:FindFirstChild("Counter-Terrorists") end
-
-local function isAlive()
-    local t, ct = getTFolder(), getCTFolder()
-    return (t and t:FindFirstChild(player.Name)) or (ct and ct:FindFirstChild(player.Name))
-end
-
-local function getEnemyFolder()
-    if not isAlive() then return nil end
-    local t, ct = getTFolder(), getCTFolder()
-    if t and t:FindFirstChild(player.Name) then return ct end
-    if ct and ct:FindFirstChild(player.Name) then return t end
-    return nil
-end
-
-local function isVisible(part)
-    if not part then return false end
-    
-    local origin = camera.CFrame.Position
-    local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {player.Character, camera, part.Parent}
-    raycastParams.IgnoreWater = true
-    
-    local result = Workspace:Raycast(origin, direction, raycastParams)
-    
-    if result and result.Instance then
-        local hitPart = result.Instance
-        local hitModel = hitPart:FindFirstAncestorOfClass("Model")
-        if hitModel and hitModel == part.Parent then
-            return true
-        end
-        return false
-    end
-    return true
-end
-
---// ==========================================
---// AIMBOT & FOV LOGIC
---// ==========================================
-local AimbotEnabled = false
-local AutoAimEnabled = false
-local MobileAimEnabled = false
-local ShowFOV = false
-local FOV_Radius = 100
-local Smoothing = 3
-local AimKey = Enum.UserInputType.MouseButton2
-local isAiming = false
-
-local StaticFOVCircle = Drawing.new("Circle")
-StaticFOVCircle.Radius = FOV_Radius
-StaticFOVCircle.Filled = false
-StaticFOVCircle.Color = Color3.fromRGB(255, 255, 255)
-StaticFOVCircle.Visible = false
-StaticFOVCircle.Thickness = 1
-StaticFOVCircle.NumSides = 64
-StaticFOVCircle.Transparency = 0.5
-StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-
-local DynamicFOVCircle = Drawing.new("Circle")
-DynamicFOVCircle.Radius = FOV_Radius
-DynamicFOVCircle.Filled = false
-DynamicFOVCircle.Color = Color3.fromRGB(255, 255, 255)
-DynamicFOVCircle.Visible = false
-DynamicFOVCircle.Thickness = 1
-DynamicFOVCircle.NumSides = 64
-DynamicFOVCircle.Transparency = 0.5
-
-local function getClosestEnemyInFOV(useStaticFOV)
-    local closestEnemy = nil
-    local closestDistance = FOV_Radius
-    local enemyFolder = getEnemyFolder()
-
-    if not enemyFolder then return nil end
-    if not AimbotEnabled and not AutoAimEnabled and not MobileAimEnabled then return nil end
-
-    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    local mousePos = UserInputService:GetMouseLocation()
-    local fovCenter = useStaticFOV and screenCenter or mousePos
-
-    for _, enemy in ipairs(enemyFolder:GetChildren()) do
-        local hum = enemy:FindFirstChildOfClass("Humanoid")
-        local head = enemy:FindFirstChild("Head")
-        
-        if hum and hum.Health > 0 and head then
-            local headPos, onScreen = camera:WorldToViewportPoint(head.Position)
-            
-            if onScreen then
-                local distanceToFOV = (Vector2.new(headPos.X, headPos.Y) - fovCenter).Magnitude
-                
-                if distanceToFOV <= FOV_Radius then
-                    if isVisible(head) then
-                        local distanceToCenter = (Vector2.new(headPos.X, headPos.Y) - screenCenter).Magnitude
-                        
-                        if distanceToCenter < closestDistance then
-                            closestDistance = distanceToCenter
-                            closestEnemy = head
-                        end
-                    end
+        local HandColorPicker = Tab_Chams:CreateColorPicker({
+            Name = "Select Hand Color",
+            Color = CurrentHandColor,
+            Flag = "HandColorPicker",
+            Callback = function(Color)
+                CurrentHandColor = Color
+                if HandChamsEnabled then
+                    UpdateHandChams()
                 end
             end
-        end
-    end
-    
-    return closestEnemy
-end
+        })
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == AimKey then 
-        isAiming = true 
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == AimKey then 
-        isAiming = false 
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if ShowFOV then
-        local mousePos = UserInputService:GetMouseLocation()
-        
-        if MobileAimEnabled then
-            StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-            StaticFOVCircle.Radius = FOV_Radius
-            StaticFOVCircle.Visible = true
-        else
-            StaticFOVCircle.Visible = false
-        end
-        
-        if (AimbotEnabled or AutoAimEnabled) and not MobileAimEnabled then
-            DynamicFOVCircle.Position = mousePos
-            DynamicFOVCircle.Radius = FOV_Radius
-            DynamicFOVCircle.Visible = true
-        else
-            DynamicFOVCircle.Visible = false
-        end
-    else
-        StaticFOVCircle.Visible = false
-        DynamicFOVCircle.Visible = false
-    end
-
-    if not isAlive() then return end
-    
-    local shouldAim = false
-    local useStaticFOV = false
-    
-    if MobileAimEnabled then
-        shouldAim = true
-        useStaticFOV = true
-    elseif AutoAimEnabled then
-        shouldAim = true
-        useStaticFOV = false
-    elseif AimbotEnabled and isAiming then
-        shouldAim = true
-        useStaticFOV = false
-    end
-    
-    if not shouldAim then return end
-
-    local targetHead = getClosestEnemyInFOV(useStaticFOV)
-    
-    if targetHead then
-        local headPos = camera:WorldToViewportPoint(targetHead.Position)
-        
-        if headPos.Z > 0 then
-            local mousePos = UserInputService:GetMouseLocation()
-            local deltaX = headPos.X - mousePos.X
-            local deltaY = headPos.Y - mousePos.Y
-            local moveX = deltaX / Smoothing
-            local moveY = deltaY / Smoothing
-            
-            if mousemoverel then
-                mousemoverel(moveX, moveY)
+        Tab_Chams:CreateButton({
+            Name = "Apply Hand Color",
+            Callback = function()
+                if HandChamsEnabled then
+                    UpdateHandChams()
+                end
             end
+        })
+
+        --// ==========================================
+        --// OTHERS TAB - 4:3 ASPECT RATIO
+        --// ==========================================
+        Tab_Others:CreateSection("Aspect Ratio Settings")
+
+        Tab_Others:CreateToggle({
+            Name = "Enable 4:3 Stretched Aspect Ratio",
+            CurrentValue = false,
+            Flag = "AspectToggle",
+            Callback = function(Value)
+                AspectEnabled = Value
+                if Value then
+                    StartAspectEffect()
+                else
+                    StopAspectEffect()
+                end
+            end
+        })
+
+        Tab_Others:CreateSlider({
+            Name = "Stretch Value (0.1 - 1.0)",
+            Range = {0.1, 1.0},
+            Increment = 0.01,
+            Suffix = " (lower = more stretch)",
+            CurrentValue = 1.0,
+            Flag = "AspectSlider",
+            Callback = function(Value)
+                AspectValue = Value
+            end
+        })
+
+        Tab_Others:CreateLabel("ℹ️ Info: Lower stretch value = wider screen effect. 0.5 = classic 4:3 stretched look", "info", Color3.fromRGB(100, 100, 255), false)
+
+        --// ==========================================
+        --// SHARED LOGIC (TEAM CHECK)
+        --// ==========================================
+        local function getTFolder() return CharactersFolder:FindFirstChild("Terrorists") end
+        local function getCTFolder() return CharactersFolder:FindFirstChild("Counter-Terrorists") end
+
+        local function isAlive()
+            local t, ct = getTFolder(), getCTFolder()
+            return (t and t:FindFirstChild(player.Name)) or (ct and ct:FindFirstChild(player.Name))
         end
-    end
-end)
 
---// ==========================================
---// COMBAT TAB UI
---// ==========================================
-Tab_Combat:CreateSection("Aimbot Settings")
-Tab_Combat:CreateToggle({
-    Name = "Enable Aimbot (Hold Right Click)",
-    CurrentValue = false,
-    Flag = "AimbotToggle",
-    Callback = function(Value) AimbotEnabled = Value end
-})
+        local function getEnemyFolder()
+            if not isAlive() then return nil end
+            local t, ct = getTFolder(), getCTFolder()
+            if t and t:FindFirstChild(player.Name) then return ct end
+            if ct and ct:FindFirstChild(player.Name) then return t end
+            return nil
+        end
 
-Tab_Combat:CreateToggle({
-    Name = "AUTO AIM (Always Active / No Hold)",
-    CurrentValue = false,
-    Flag = "AutoAimToggle",
-    Callback = function(Value) AutoAimEnabled = Value end
-})
-
-Tab_Combat:CreateToggle({
-    Name = "MOBILE AIM (Static FOV / Always Active)",
-    CurrentValue = false,
-    Flag = "MobileAimToggle",
-    Callback = function(Value) MobileAimEnabled = Value end
-})
-
-Tab_Combat:CreateToggle({
-    Name = "Show FOV Circle",
-    CurrentValue = false,
-    Flag = "FOVToggle",
-    Callback = function(Value) ShowFOV = Value end
-})
-
-Tab_Combat:CreateSlider({
-    Name = "FOV Radius",
-    Range = {10, 500},
-    Increment = 10,
-    Suffix = "px",
-    CurrentValue = 100,
-    Flag = "FOVSlider",
-    Callback = function(Value) FOV_Radius = Value end
-})
-
-Tab_Combat:CreateSlider({
-    Name = "Aimbot Smoothing",
-    Range = {1, 20},
-    Increment = 1,
-    Suffix = " (1 = instant, 20 = very smooth)",
-    CurrentValue = 3,
-    Flag = "AimbotSmoothing",
-    Callback = function(Value) Smoothing = Value end
-})
-
---// ==========================================
---// TRIGGERBOT LOGIC
---// ==========================================
-local TriggerBotEnabled = false
-local TriggerBotDelay = 0
-
-Tab_Combat:CreateSection("TriggerBot Settings")
-Tab_Combat:CreateToggle({
-    Name = "Enable TriggerBot",
-    CurrentValue = false,
-    Flag = "TriggerBotToggle",
-    Callback = function(Value) TriggerBotEnabled = Value end
-})
-
-Tab_Combat:CreateSlider({
-    Name = "Shot Delay",
-    Range = {0, 500},
-    Increment = 10,
-    Suffix = "ms",
-    CurrentValue = 0,
-    Flag = "TriggerBotDelay",
-    Callback = function(Value) TriggerBotDelay = Value end
-})
-
-task.spawn(function()
-    while task.wait(0.01) do
-        if TriggerBotEnabled and isAlive() then
-            local viewportSize = camera.ViewportSize
-            local ray = camera:ViewportPointToRay(viewportSize.X / 2, viewportSize.Y / 2)
+        local function isVisible(part)
+            if not part then return false end
+            
+            local origin = camera.CFrame.Position
+            local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
+            
             local raycastParams = RaycastParams.new()
-            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-            local ignoreList = {camera}
-            if player.Character then table.insert(ignoreList, player.Character) end
-            raycastParams.FilterDescendantsInstances = ignoreList
-
-            local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
-
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            raycastParams.FilterDescendantsInstances = {player.Character, camera, part.Parent}
+            raycastParams.IgnoreWater = true
+            
+            local result = Workspace:Raycast(origin, direction, raycastParams)
+            
             if result and result.Instance then
                 local hitPart = result.Instance
-                local model = hitPart:FindFirstAncestorOfClass("Model")
-                if model and model:FindFirstChildOfClass("Humanoid") then
-                    local enemyFolder = getEnemyFolder()
-                    if enemyFolder and model.Parent == enemyFolder then
-                        local hum = model:FindFirstChildOfClass("Humanoid")
-                        if hum and hum.Health > 0 then
-                            local head = model:FindFirstChild("Head")
-                            if head and isVisible(head) then
-                                if TriggerBotDelay > 0 then task.wait(TriggerBotDelay / 1000) end
-                                if mouse1click then mouse1click() end
-                                task.wait(0.05)
-                            end
-                        end
-                    end
+                local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+                if hitModel and hitModel == part.Parent then
+                    return true
                 end
+                return false
             end
+            return true
         end
-    end
-end)
 
---// ==========================================
---// SIMPLE HITBOX LOGIC
---// ==========================================
-local HitboxEnabled = false
-local HitboxSize = 3
-local originalHeadSizes = {}
+        --// ==========================================
+        --// AIMBOT & FOV LOGIC
+        --// ==========================================
+        local AimbotEnabled = false
+        local AutoAimEnabled = false
+        local MobileAimEnabled = false
+        local ShowFOV = false
+        local FOV_Radius = 100
+        local Smoothing = 3
+        local AimKey = Enum.UserInputType.MouseButton2
+        local isAiming = false
 
-Tab_Combat:CreateSection("Simple Hitbox (Max 3)")
-Tab_Combat:CreateToggle({
-    Name = "Enable Hitbox",
-    CurrentValue = false,
-    Flag = "HitboxToggle",
-    Callback = function(Value) HitboxEnabled = Value end
-})
+        local StaticFOVCircle = Drawing.new("Circle")
+        StaticFOVCircle.Radius = FOV_Radius
+        StaticFOVCircle.Filled = false
+        StaticFOVCircle.Color = Color3.fromRGB(255, 255, 255)
+        StaticFOVCircle.Visible = false
+        StaticFOVCircle.Thickness = 1
+        StaticFOVCircle.NumSides = 64
+        StaticFOVCircle.Transparency = 0.5
+        StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 
-Tab_Combat:CreateSlider({
-    Name = "Hitbox Size",
-    Range = {1, 3},
-    Increment = 0.1,
-    Suffix = " Studs",
-    CurrentValue = 3,
-    Flag = "HitboxSize",
-    Callback = function(Value) HitboxSize = Value end
-})
+        local DynamicFOVCircle = Drawing.new("Circle")
+        DynamicFOVCircle.Radius = FOV_Radius
+        DynamicFOVCircle.Filled = false
+        DynamicFOVCircle.Color = Color3.fromRGB(255, 255, 255)
+        DynamicFOVCircle.Visible = false
+        DynamicFOVCircle.Thickness = 1
+        DynamicFOVCircle.NumSides = 64
+        DynamicFOVCircle.Transparency = 0.5
 
-task.spawn(function()
-    while task.wait(0.5) do
-        local enemyFolder = getEnemyFolder()
-        if enemyFolder then
+        local function getClosestEnemyInFOV(useStaticFOV)
+            local closestEnemy = nil
+            local closestDistance = FOV_Radius
+            local enemyFolder = getEnemyFolder()
+
+            if not enemyFolder then return nil end
+            if not AimbotEnabled and not AutoAimEnabled and not MobileAimEnabled then return nil end
+
+            local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local mousePos = UserInputService:GetMouseLocation()
+            local fovCenter = useStaticFOV and screenCenter or mousePos
+
             for _, enemy in ipairs(enemyFolder:GetChildren()) do
-                local head = enemy:FindFirstChild("Head")
                 local hum = enemy:FindFirstChildOfClass("Humanoid")
-
-                if head and hum and hum.Health > 0 then
-                    if not originalHeadSizes[head] then
-                        originalHeadSizes[head] = head.Size
-                    end
-
-                    if HitboxEnabled then
-                        head.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
-                        head.CanCollide = false
-                        head.Transparency = 0.5
-                    else
-                        if originalHeadSizes[head] and head.Size ~= originalHeadSizes[head] then
-                            head.Size = originalHeadSizes[head]
-                            head.Transparency = 0
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-
---// ==========================================
---// BHOP (BUNNY HOP) LOGIC
---// ==========================================
-local BhopEnabled = false
-
-Tab_Combat:CreateSection("Movement Settings")
-Tab_Combat:CreateToggle({
-    Name = "Enable Bunny Hop (Hold Space)",
-    CurrentValue = false,
-    Flag = "BhopToggle",
-    Callback = function(Value) BhopEnabled = Value end
-})
-
-RunService.RenderStepped:Connect(function()
-    if BhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) and isAlive() then
-        if player.Character then
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum:GetState() ~= Enum.HumanoidStateType.Jumping and hum:GetState() ~= Enum.HumanoidStateType.Freefall then
-                hum.Jump = true
-            end
-        end
-    end
-end)
-
---// ==========================================
---// SKINS TAB LOGIC
---// ==========================================
-local scriptRunning = false
-local selectedKnife = "Butterfly Knife"
-local spawned = false
-local inspecting = false
-local swinging = false
-local lastAttackTime = 0
-
-local ATTACK_COOLDOWN = 1
-local ACTION_INSPECT = "InspectKnifeAction"
-local ACTION_ATTACK  = "AttackKnifeAction"
-
-pcall(function() if RS.Assets.Weapons.Karambit then RS.Assets.Weapons.Karambit.Camera.ViewmodelLight.Transparency = 1 end end)
-
-local knives = {
-    ["Karambit"] = {Offset = CFrame.new(0, -1.5, 1.5)},
-    ["Butterfly Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
-    ["M9 Bayonet"] = {Offset = CFrame.new(0, -1.5, 1)},
-    ["Flip Knife"] = {Offset = CFrame.new(0, -1.5, 1.25)},
-    ["Gut Knife"] = {Offset = CFrame.new(0, -1.5, 0.5)},
-}
-
-local vm, animator
-local equipAnim, idleAnim, inspectAnim, HeavySwingAnim, Swing1Anim, Swing2Anim
-
-local function getKnifeInCamera() return camera:FindFirstChild("T Knife") or camera:FindFirstChild("CT Knife") end
-
-local function cleanPart(part)
-    if not part:IsA("BasePart") then return end
-    part.CanCollide, part.Anchored, part.CastShadow, part.CanTouch, part.CanQuery = false, false, false, false, false
-end
-
-local function disableCollisions(model)
-    for _, part in model:GetDescendants() do cleanPart(part) end
-end
-
-local function hideOriginalKnife(knife)
-    for _, part in knife:GetDescendants() do
-        if part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Texture") then part.Transparency = 1 end
-    end
-end
-
-local function playSound(folder, name)
-    local weaponSounds = RS.Sounds:FindFirstChild(selectedKnife)
-    if not weaponSounds then return end
-    local sound = weaponSounds:WaitForChild(folder):WaitForChild(name):Clone()
-    sound.Parent = camera
-    sound:Play()
-    sound.Ended:Once(function() sound:Destroy() end)
-    return sound
-end
-
-local function attachAsset(folder, armPartName, assetModelName, finalName, offset)
-    local targetArm = vm:FindFirstChild(armPartName)
-    if not targetArm then return end
-    local assetMesh = folder:WaitForChild(assetModelName):Clone()
-    cleanPart(assetMesh)
-    assetMesh.Name = finalName
-    assetMesh.Parent = targetArm
-    local motor = Instance.new("Motor6D")
-    motor.Part0, motor.Part1, motor.C0, motor.Parent = targetArm, assetMesh, offset, targetArm
-end
-
-local function handleAction(actionName, inputState, inputObject)
-    if inputState ~= Enum.UserInputState.Begin or not spawned or not animator or not isAlive() then return Enum.ContextActionResult.Pass end
-
-    if actionName == ACTION_INSPECT then
-        if (equipAnim and equipAnim.IsPlaying) or inspecting or swinging then return Enum.ContextActionResult.Pass end
-        inspecting = true
-        if idleAnim then idleAnim:Stop() end
-        inspectAnim:Play()
-        inspectAnim.Stopped:Once(function() inspecting = false end)
-    elseif actionName == ACTION_ATTACK then
-        local currentTime = os.clock()
-        if (equipAnim and equipAnim.IsPlaying) or (currentTime - lastAttackTime < ATTACK_COOLDOWN) then return Enum.ContextActionResult.Pass end
-        lastAttackTime = currentTime
-        if inspecting then inspecting = false; if inspectAnim then inspectAnim:Stop() end end
-        swinging = true
-        if idleAnim then idleAnim:Stop() end
-        local anims = {HeavySwingAnim, Swing1Anim, Swing2Anim}
-        local chosenAnim = anims[math.random(1, #anims)]
-        local soundFolder = (chosenAnim == HeavySwingAnim and "HitOne") or (chosenAnim == Swing1Anim and "HitTwo") or "HitThree"
-        chosenAnim:Play()
-        local s = playSound(soundFolder, "1")
-        if s then s.Volume = 5 end
-        chosenAnim.Stopped:Once(function() swinging = false end)
-    end
-    return Enum.ContextActionResult.Pass
-end
-
-local function removeViewmodel()
-    spawned = false
-    CAS:UnbindAction(ACTION_INSPECT)
-    CAS:UnbindAction(ACTION_ATTACK)
-    if vm then vm:Destroy() vm = nil end
-    animator, inspecting, swinging = nil, false, false
-end
-
-local function spawnViewmodel(knife)
-    if spawned or not scriptRunning then return end
-    local myModel = isAlive()
-    if not myModel then return end
-    spawned = true
-
-    local knifeTemplate = RS.Assets.Weapons:WaitForChild(selectedKnife)
-    local knifeOffset = knives[selectedKnife].Offset
-    vm = knifeTemplate:WaitForChild("Camera"):Clone()
-    vm.Name, vm.Parent = selectedKnife, camera
-
-    disableCollisions(vm)
-    hideOriginalKnife(knife)
-
-    if myModel.Parent.Name == "Terrorists" then
-        local tGloves = RS.Assets.Weapons:WaitForChild("T Glove")
-        attachAsset(tGloves, "Left Arm", "Left Arm", "Glove", CFrame.new(0, 0, -1.5))
-        attachAsset(tGloves, "Right Arm", "Right Arm", "Glove", CFrame.new(0, 0, -1.5))
-    else
-        local sleeves = RS.Assets.Sleeves:WaitForChild("IDF")
-        local ctGloves = RS.Assets.Weapons:WaitForChild("CT Glove")
-        attachAsset(sleeves, "Left Arm", "Left Arm", "Sleeve", CFrame.new(0, 0, 0.5))
-        attachAsset(ctGloves, "Left Arm", "Left Arm", "Glove", CFrame.new(0, 0, -1.5))
-        attachAsset(sleeves, "Right Arm", "Right Arm", "Sleeve", CFrame.new(0, 0, 0.5))
-        attachAsset(ctGloves, "Right Arm", "Right Arm", "Glove", CFrame.new(0, 0, -1.5))
-    end
-
-    local animController = vm:FindFirstChildOfClass("AnimationController") or vm:FindFirstChildOfClass("Animator")
-    animator = animController:FindFirstChildWhichIsA("Animator") or animController
-    local animFolder = RS.Assets.WeaponAnimations:WaitForChild(selectedKnife):WaitForChild("CameraAnimations")
-
-    equipAnim = animator:LoadAnimation(animFolder:WaitForChild("Equip"))
-    idleAnim = animator:LoadAnimation(animFolder:WaitForChild("Idle"))
-    inspectAnim = animator:LoadAnimation(animFolder:WaitForChild("Inspect"))
-    HeavySwingAnim = animator:LoadAnimation(animFolder:WaitForChild("Heavy Swing"))
-    Swing1Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing1"))
-    Swing2Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing2"))
-
-    vm:SetPrimaryPartCFrame(camera.CFrame * CFrame.new(0, -1.5, 5))
-    TweenService:Create(vm.PrimaryPart, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        CFrame = camera.CFrame * knifeOffset
-    }):Play()
-
-    equipAnim:Play()
-    playSound("Equip", "1")
-
-    CAS:BindAction(ACTION_INSPECT, handleAction, false, Enum.KeyCode.F)
-    CAS:BindAction(ACTION_ATTACK, handleAction, false, Enum.UserInputType.MouseButton1)
-end
-
-RunService.RenderStepped:Connect(function()
-    if not scriptRunning or not vm or not vm.PrimaryPart then return end
-    vm.PrimaryPart.CFrame = camera.CFrame * knives[selectedKnife].Offset
-    if not (equipAnim and equipAnim.IsPlaying) and not inspecting and not swinging then
-        if idleAnim and not idleAnim.IsPlaying then idleAnim:Play() end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.1) do
-        local living = isAlive()
-        local currentKnife = getKnifeInCamera()
-        if scriptRunning and living and currentKnife and not spawned then
-            spawnViewmodel(currentKnife)
-        elseif (not scriptRunning or not currentKnife or not living) and spawned then
-            removeViewmodel()
-        end
-    end
-end)
-
-local SkinChangerEnabled = false
-local SelectedSkins = {}
-local DropdownObjects = {}
-local SkinOptions = {}
-local COOLDOWN = 0.1
-local WEAR = "Factory New"
-
-local CT_ONLY = {["USP-S"]=true, ["Five-SeveN"]=true, ["MP9"]=true, ["FAMAS"]=true, ["M4A1-S"]=true, ["M4A4"]=true, ["AUG"]=true}
-local SHARED = {["P250"]=true, ["Desert Eagle"]=true, ["Dual Berettas"]=true, ["Negev"]=true, ["P90"]=true, ["Nova"]=true, ["XM1014"]=true, ["AWP"]=true, ["SSG 08"]=true}
-local KNIVES = {["Karambit"]=true, ["Butterfly Knife"]=true, ["M9 Bayonet"]=true, ["Flip Knife"]=true, ["Gut Knife"]=true, ["T Knife"]=true, ["CT Knife"]=true}
-local GLOVES = {["Sports Gloves"]=true}
-local SkinsFolder = RS:WaitForChild("Assets"):WaitForChild("Skins")
-local IgnoreFolders = {["HE Grenade"]=true, ["Incendiary Grenade"]=true, ["Molotov"]=true, ["Smoke Grenade"]=true, ["Flashbang"]=true, ["Decoy Grenade"]=true, ["C4"]=true, ["CT Glove"]=true, ["T Glove"]=true}
-
-local function applyWeaponSkin(model)
-    if not model or not SkinChangerEnabled or not isAlive() then return end
-    local skinName = SelectedSkins[model.Name]
-    if not skinName then return end
-
-    pcall(function()
-        local skinFolder = SkinsFolder:FindFirstChild(model.Name)
-        if not skinFolder then return end
-        local skinType = skinFolder:FindFirstChild(skinName)
-        local sourceFolder = skinType and skinType:FindFirstChild("Camera") and skinType.Camera:FindFirstChild(WEAR)
-        if not sourceFolder then return end
-
-        for _, obj in camera:GetChildren() do
-            local left, right = obj:FindFirstChild("Left Arm"), obj:FindFirstChild("Right Arm")
-            if left or right then
-                local gloveFolder = SkinsFolder:FindFirstChild("Sports Gloves")
-                local gloveSkin = gloveFolder and gloveFolder:FindFirstChild(SelectedSkins["Sports Gloves"])
-                local gloveSource = gloveSkin and gloveSkin:FindFirstChild("Camera") and gloveSkin.Camera:FindFirstChild(WEAR)
-                if gloveSource then
-                    for _, side in {"Left Arm", "Right Arm"} do
-                        local arm, src = obj:FindFirstChild(side), gloveSource:FindFirstChild(side)
-                        if arm and src then
-                            local gloveMesh = arm:FindFirstChild("Glove")
-                            if gloveMesh then
-                                local existing = gloveMesh:FindFirstChildOfClass("SurfaceAppearance")
-                                if existing then existing:Destroy() end
-                                local clone = src:Clone()
-                                clone.Name, clone.Parent = "SurfaceAppearance", gloveMesh
+                local head = enemy:FindFirstChild("Head")
+                
+                if hum and hum.Health > 0 and head then
+                    local headPos, onScreen = camera:WorldToViewportPoint(head.Position)
+                    
+                    if onScreen then
+                        local distanceToFOV = (Vector2.new(headPos.X, headPos.Y) - fovCenter).Magnitude
+                        
+                        if distanceToFOV <= FOV_Radius then
+                            if isVisible(head) then
+                                local distanceToCenter = (Vector2.new(headPos.X, headPos.Y) - screenCenter).Magnitude
+                                
+                                if distanceToCenter < closestDistance then
+                                    closestDistance = distanceToCenter
+                                    closestEnemy = head
+                                end
                             end
                         end
                     end
                 end
             end
+            
+            return closestEnemy
         end
 
-        if not GLOVES[model.Name] then
-            local weaponFolder = model:FindFirstChild("Weapon")
-            if weaponFolder then
-                for _, part in weaponFolder:GetDescendants() do
-                    if part:IsA("BasePart") then
-                        local newSkin = sourceFolder:FindFirstChild(part.Name)
-                        if newSkin then
-                            local existing = part:FindFirstChildOfClass("SurfaceAppearance")
-                            if existing then existing:Destroy() end
-                            local clone = newSkin:Clone()
-                            clone.Name, clone.Parent = "SurfaceAppearance", part
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == AimKey then 
+                isAiming = true 
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == AimKey then 
+                isAiming = false 
+            end
+        end)
+
+        RunService.RenderStepped:Connect(function()
+            if ShowFOV then
+                local mousePos = UserInputService:GetMouseLocation()
+                
+                if MobileAimEnabled then
+                    StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+                    StaticFOVCircle.Radius = FOV_Radius
+                    StaticFOVCircle.Visible = true
+                else
+                    StaticFOVCircle.Visible = false
+                end
+                
+                if (AimbotEnabled or AutoAimEnabled) and not MobileAimEnabled then
+                    DynamicFOVCircle.Position = mousePos
+                    DynamicFOVCircle.Radius = FOV_Radius
+                    DynamicFOVCircle.Visible = true
+                else
+                    DynamicFOVCircle.Visible = false
+                end
+            else
+                StaticFOVCircle.Visible = false
+                DynamicFOVCircle.Visible = false
+            end
+
+            if not isAlive() then return end
+            
+            local shouldAim = false
+            local useStaticFOV = false
+            
+            if MobileAimEnabled then
+                shouldAim = true
+                useStaticFOV = true
+            elseif AutoAimEnabled then
+                shouldAim = true
+                useStaticFOV = false
+            elseif AimbotEnabled and isAiming then
+                shouldAim = true
+                useStaticFOV = false
+            end
+            
+            if not shouldAim then return end
+
+            local targetHead = getClosestEnemyInFOV(useStaticFOV)
+            
+            if targetHead then
+                local headPos = camera:WorldToViewportPoint(targetHead.Position)
+                
+                if headPos.Z > 0 then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local deltaX = headPos.X - mousePos.X
+                    local deltaY = headPos.Y - mousePos.Y
+                    local moveX = deltaX / Smoothing
+                    local moveY = deltaY / Smoothing
+                    
+                    if mousemoverel then
+                        mousemoverel(moveX, moveY)
+                    end
+                end
+            end
+        end)
+
+        --// ==========================================
+        --// COMBAT TAB UI
+        --// ==========================================
+        Tab_Combat:CreateSection("Aimbot Settings")
+        Tab_Combat:CreateToggle({
+            Name = "Enable Aimbot (Hold Right Click)",
+            CurrentValue = false,
+            Flag = "AimbotToggle",
+            Callback = function(Value) AimbotEnabled = Value end
+        })
+
+        Tab_Combat:CreateToggle({
+            Name = "AUTO AIM (Always Active / No Hold)",
+            CurrentValue = false,
+            Flag = "AutoAimToggle",
+            Callback = function(Value) AutoAimEnabled = Value end
+        })
+
+        Tab_Combat:CreateToggle({
+            Name = "MOBILE AIM (Static FOV / Always Active)",
+            CurrentValue = false,
+            Flag = "MobileAimToggle",
+            Callback = function(Value) MobileAimEnabled = Value end
+        })
+
+        Tab_Combat:CreateToggle({
+            Name = "Show FOV Circle",
+            CurrentValue = false,
+            Flag = "FOVToggle",
+            Callback = function(Value) ShowFOV = Value end
+        })
+
+        Tab_Combat:CreateSlider({
+            Name = "FOV Radius",
+            Range = {10, 500},
+            Increment = 10,
+            Suffix = "px",
+            CurrentValue = 100,
+            Flag = "FOVSlider",
+            Callback = function(Value) FOV_Radius = Value end
+        })
+
+        Tab_Combat:CreateSlider({
+            Name = "Aimbot Smoothing",
+            Range = {1, 20},
+            Increment = 1,
+            Suffix = " (1 = instant, 20 = very smooth)",
+            CurrentValue = 3,
+            Flag = "AimbotSmoothing",
+            Callback = function(Value) Smoothing = Value end
+        })
+
+        --// ==========================================
+        --// TRIGGERBOT LOGIC
+        --// ==========================================
+        local TriggerBotEnabled = false
+        local TriggerBotDelay = 0
+
+        Tab_Combat:CreateSection("TriggerBot Settings")
+        Tab_Combat:CreateToggle({
+            Name = "Enable TriggerBot",
+            CurrentValue = false,
+            Flag = "TriggerBotToggle",
+            Callback = function(Value) TriggerBotEnabled = Value end
+        })
+
+        Tab_Combat:CreateSlider({
+            Name = "Shot Delay",
+            Range = {0, 500},
+            Increment = 10,
+            Suffix = "ms",
+            CurrentValue = 0,
+            Flag = "TriggerBotDelay",
+            Callback = function(Value) TriggerBotDelay = Value end
+        })
+
+        task.spawn(function()
+            while task.wait(0.01) do
+                if TriggerBotEnabled and isAlive() then
+                    local viewportSize = camera.ViewportSize
+                    local ray = camera:ViewportPointToRay(viewportSize.X / 2, viewportSize.Y / 2)
+                    local raycastParams = RaycastParams.new()
+                    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+                    local ignoreList = {camera}
+                    if player.Character then table.insert(ignoreList, player.Character) end
+                    raycastParams.FilterDescendantsInstances = ignoreList
+
+                    local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
+
+                    if result and result.Instance then
+                        local hitPart = result.Instance
+                        local model = hitPart:FindFirstAncestorOfClass("Model")
+                        if model and model:FindFirstChildOfClass("Humanoid") then
+                            local enemyFolder = getEnemyFolder()
+                            if enemyFolder and model.Parent == enemyFolder then
+                                local hum = model:FindFirstChildOfClass("Humanoid")
+                                if hum and hum.Health > 0 then
+                                    local head = model:FindFirstChild("Head")
+                                    if head and isVisible(head) then
+                                        if TriggerBotDelay > 0 then task.wait(TriggerBotDelay / 1000) end
+                                        if mouse1click then mouse1click() end
+                                        task.wait(0.05)
+                                    end
+                                end
+                            end
                         end
                     end
                 end
             end
-        end
-        model:SetAttribute("SkinApplied", skinName)
-    end)
-end
+        end)
 
-Tab_Skins:CreateToggle({
-    Name = "Enable Skin Changer",
-    CurrentValue = false,
-    Flag = "SkinChangerToggle",
-    Callback = function(Value)
-        SkinChangerEnabled = Value
-        if not Value then for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil) end end
-    end
-})
+        --// ==========================================
+        --// SIMPLE HITBOX LOGIC
+        --// ==========================================
+        local HitboxEnabled = false
+        local HitboxSize = 3
+        local originalHeadSizes = {}
 
-Tab_Skins:CreateButton({
-    Name = "🎲 Randomize All Skins",
-    Callback = function()
-        for weaponName, optionsList in pairs(SkinOptions) do
-            if #optionsList > 0 then
-                local randomSkin = optionsList[math.random(1, #optionsList)]
-                if DropdownObjects[weaponName] then
-                    for _, dropdown in ipairs(DropdownObjects[weaponName]) do dropdown:Set({randomSkin}) end
+        Tab_Combat:CreateSection("Simple Hitbox (Max 3)")
+        Tab_Combat:CreateToggle({
+            Name = "Enable Hitbox",
+            CurrentValue = false,
+            Flag = "HitboxToggle",
+            Callback = function(Value) HitboxEnabled = Value end
+        })
+
+        Tab_Combat:CreateSlider({
+            Name = "Hitbox Size",
+            Range = {1, 3},
+            Increment = 0.1,
+            Suffix = " Studs",
+            CurrentValue = 3,
+            Flag = "HitboxSize",
+            Callback = function(Value) HitboxSize = Value end
+        })
+
+        task.spawn(function()
+            while task.wait(0.5) do
+                local enemyFolder = getEnemyFolder()
+                if enemyFolder then
+                    for _, enemy in ipairs(enemyFolder:GetChildren()) do
+                        local head = enemy:FindFirstChild("Head")
+                        local hum = enemy:FindFirstChildOfClass("Humanoid")
+
+                        if head and hum and hum.Health > 0 then
+                            if not originalHeadSizes[head] then
+                                originalHeadSizes[head] = head.Size
+                            end
+
+                            if HitboxEnabled then
+                                head.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+                                head.CanCollide = false
+                                head.Transparency = 0.5
+                            else
+                                if originalHeadSizes[head] and head.Size ~= originalHeadSizes[head] then
+                                    head.Size = originalHeadSizes[head]
+                                    head.Transparency = 0
+                                end
+                            end
+                        end
+                    end
                 end
             end
-        end
-    end,
-})
+        end)
 
-local function CreateSkinDropdown(weaponName)
-    local folder = SkinsFolder:FindFirstChild(weaponName)
-    if not folder then return end
+        --// ==========================================
+        --// BHOP (BUNNY HOP) LOGIC
+        --// ==========================================
+        local BhopEnabled = false
 
-    local options = {}
-    for _, skin in folder:GetChildren() do table.insert(options, skin.Name) end
-    SkinOptions[weaponName] = options
+        Tab_Combat:CreateSection("Movement Settings")
+        Tab_Combat:CreateToggle({
+            Name = "Enable Bunny Hop (Hold Space)",
+            CurrentValue = false,
+            Flag = "BhopToggle",
+            Callback = function(Value) BhopEnabled = Value end
+        })
 
-    if not SelectedSkins[weaponName] then SelectedSkins[weaponName] = options[1] end
-
-    local dp = Tab_Skins:CreateDropdown({
-        Name = weaponName,
-        Options = options,
-        CurrentOption = {SelectedSkins[weaponName]},
-        Flag = "Skin_" .. weaponName,
-        Callback = function(opt)
-            local newSkin = opt[1]
-            SelectedSkins[weaponName] = newSkin
-            if DropdownObjects[weaponName] then
-                for _, other in DropdownObjects[weaponName] do
-                    if other.CurrentOption[1] ~= newSkin then other:Set({newSkin}) end
+        RunService.RenderStepped:Connect(function()
+            if BhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) and isAlive() then
+                if player.Character then
+                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum:GetState() ~= Enum.HumanoidStateType.Jumping and hum:GetState() ~= Enum.HumanoidStateType.Freefall then
+                        hum.Jump = true
+                    end
                 end
             end
-            for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil); applyWeaponSkin(obj) end
+        end)
+
+        --// ==========================================
+        --// SKINS TAB LOGIC
+        --// ==========================================
+        local scriptRunning = false
+        local selectedKnife = "Butterfly Knife"
+        local spawned = false
+        local inspecting = false
+        local swinging = false
+        local lastAttackTime = 0
+
+        local ATTACK_COOLDOWN = 1
+        local ACTION_INSPECT = "InspectKnifeAction"
+        local ACTION_ATTACK  = "AttackKnifeAction"
+
+        pcall(function() if RS.Assets.Weapons.Karambit then RS.Assets.Weapons.Karambit.Camera.ViewmodelLight.Transparency = 1 end end)
+
+        local knives = {
+            ["Karambit"] = {Offset = CFrame.new(0, -1.5, 1.5)},
+            ["Butterfly Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
+            ["M9 Bayonet"] = {Offset = CFrame.new(0, -1.5, 1)},
+            ["Flip Knife"] = {Offset = CFrame.new(0, -1.5, 1.25)},
+            ["Gut Knife"] = {Offset = CFrame.new(0, -1.5, 0.5)},
+        }
+
+        local vm, animator
+        local equipAnim, idleAnim, inspectAnim, HeavySwingAnim, Swing1Anim, Swing2Anim
+
+        local function getKnifeInCamera() return camera:FindFirstChild("T Knife") or camera:FindFirstChild("CT Knife") end
+
+        local function cleanPart(part)
+            if not part:IsA("BasePart") then return end
+            part.CanCollide, part.Anchored, part.CastShadow, part.CanTouch, part.CanQuery = false, false, false, false, false
         end
-    })
-    DropdownObjects[weaponName] = DropdownObjects[weaponName] or {}
-    table.insert(DropdownObjects[weaponName], dp)
-end
 
-Tab_Skins:CreateToggle({
-    Name = "Enable Custom Knife",
-    CurrentValue = false,
-    Flag = "KnifeToggle",
-    Callback = function(Value)
-        scriptRunning = Value; if not Value then removeViewmodel() end
-    end
-})
+        local function disableCollisions(model)
+            for _, part in model:GetDescendants() do cleanPart(part) end
+        end
 
-Tab_Skins:CreateDropdown({
-    Name = "Selected Custom Knife",
-    Options = {"Butterfly Knife", "Karambit", "M9 Bayonet", "Flip Knife", "Gut Knife"},
-    CurrentOption = {"Butterfly Knife"},
-    MultipleOptions = false,
-    Flag = "KnifeDropdown",
-    Callback = function(Options)
-        selectedKnife = Options[1]; if spawned then removeViewmodel() end
-    end
-})
-
-Tab_Skins:CreateSection("Knives Skins")
-for name in pairs(KNIVES) do CreateSkinDropdown(name) end
-Tab_Skins:CreateSection("Gloves")
-for name in pairs(GLOVES) do CreateSkinDropdown(name) end
-Tab_Skins:CreateSection("CT Weapons")
-for name in pairs(CT_ONLY) do CreateSkinDropdown(name) end
-Tab_Skins:CreateSection("T Weapons")
-for name in pairs(SHARED) do CreateSkinDropdown(name) end
-
-for _, folder in SkinsFolder:GetChildren() do
-    local n = folder.Name
-    if not IgnoreFolders[n] and not KNIVES[n] and not GLOVES[n] and not CT_ONLY[n] and not SHARED[n] then CreateSkinDropdown(n) end
-end
-
-camera.ChildAdded:Connect(function(obj)
-    if not SkinChangerEnabled or not isAlive() then return end
-    task.wait(COOLDOWN); applyWeaponSkin(obj)
-end)
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if SkinChangerEnabled and isAlive() then
-            for _, obj in camera:GetChildren() do
-                if SelectedSkins[obj.Name] and obj:GetAttribute("SkinApplied") ~= SelectedSkins[obj.Name] then applyWeaponSkin(obj) end
+        local function hideOriginalKnife(knife)
+            for _, part in knife:GetDescendants() do
+                if part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Texture") then part.Transparency = 1 end
             end
         end
-    end
-end)
 
---// ==========================================
---// VISUALS TAB LOGIC (ESP & WORLD)
---// ==========================================
-local EspEnabled, EspBox, EspName, EspHealth, EspDistance = false, true, true, true, true
-local espCache = {}
-
-local function createESP()
-    local esp = {
-        boxOutline = Drawing.new("Square"), box = Drawing.new("Square"),
-        name = Drawing.new("Text"), distance = Drawing.new("Text"),
-        healthOutline = Drawing.new("Line"), healthBar = Drawing.new("Line")
-    }
-    esp.boxOutline.Thickness = 3; esp.boxOutline.Filled = false; esp.boxOutline.Color = Color3.new(0, 0, 0)
-    esp.box.Thickness = 1; esp.box.Filled = false; esp.box.Color = Color3.fromRGB(255, 50, 50)
-    esp.name.Center = true; esp.name.Outline = true; esp.name.Color = Color3.new(1, 1, 1); esp.name.Size = 16
-    esp.distance.Center = true; esp.distance.Outline = true; esp.distance.Color = Color3.new(0.8, 0.8, 0.8); esp.distance.Size = 13
-    esp.healthOutline.Thickness = 3; esp.healthOutline.Color = Color3.new(0, 0, 0)
-    esp.healthBar.Thickness = 1; esp.healthBar.Color = Color3.new(0, 1, 0)
-    return esp
-end
-
-RunService.RenderStepped:Connect(function()
-    if not EspEnabled or not isAlive() then
-        for _, e in pairs(espCache) do for _, d in pairs(e) do d.Visible = false end end
-        return
-    end
-
-    local enemyFolder = getEnemyFolder()
-    if not enemyFolder then return end
-
-    local currentAlive = {}
-    for _, enemy in ipairs(enemyFolder:GetChildren()) do
-        local hum, root, head = enemy:FindFirstChildOfClass("Humanoid"), enemy:FindFirstChild("HumanoidRootPart"), enemy:FindFirstChild("Head")
-
-        if hum and hum.Health > 0 and root and head then
-            currentAlive[enemy] = true
-            if not espCache[enemy] then espCache[enemy] = createESP() end
-
-            local esp = espCache[enemy]
-            local rootPos, onScreen = camera:WorldToViewportPoint(root.Position)
-            local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-            local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
-
-            if onScreen then
-                local boxH, boxW = math.abs(headPos.Y - legPos.Y), math.abs(headPos.Y - legPos.Y) / 2
-                local dist = math.floor((camera.CFrame.Position - root.Position).Magnitude)
-
-                if EspBox then
-                    esp.boxOutline.Size = Vector2.new(boxW, boxH); esp.boxOutline.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.boxOutline.Visible = true
-                    esp.box.Size = Vector2.new(boxW, boxH); esp.box.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.box.Visible = true
-                else esp.boxOutline.Visible, esp.box.Visible = false, false end
-
-                if EspHealth then
-                    local hpPct, barX = hum.Health / hum.MaxHealth, rootPos.X - boxW / 2 - 6
-                    esp.healthOutline.From = Vector2.new(barX, headPos.Y - 1); esp.healthOutline.To = Vector2.new(barX, headPos.Y + boxH + 1); esp.healthOutline.Visible = true
-                    esp.healthBar.From = Vector2.new(barX, headPos.Y + boxH); esp.healthBar.To = Vector2.new(barX, headPos.Y + boxH - (boxH * hpPct)); esp.healthBar.Color = Color3.new(1 - hpPct, hpPct, 0); esp.healthBar.Visible = true
-                else esp.healthOutline.Visible, esp.healthBar.Visible = false, false end
-
-                if EspName then esp.name.Text = enemy.Name; esp.name.Position = Vector2.new(rootPos.X, headPos.Y - 20); esp.name.Visible = true 
-                else esp.name.Visible = false end
-
-                if EspDistance then esp.distance.Text = "[" .. dist .. "m]"; esp.distance.Position = Vector2.new(rootPos.X, headPos.Y + boxH + 2); esp.distance.Visible = true
-                else esp.distance.Visible = false end
-            else for _, d in pairs(esp) do d.Visible = false end end
+        local function playSound(folder, name)
+            local weaponSounds = RS.Sounds:FindFirstChild(selectedKnife)
+            if not weaponSounds then return end
+            local sound = weaponSounds:WaitForChild(folder):WaitForChild(name):Clone()
+            sound.Parent = camera
+            sound:Play()
+            sound.Ended:Once(function() sound:Destroy() end)
+            return sound
         end
-    end
-    for cEnemy, e in pairs(espCache) do
-        if not currentAlive[cEnemy] then for _, d in pairs(e) do d:Remove() end; espCache[cEnemy] = nil end
-    end
-end)
 
-Tab_Visuals:CreateSection("ESP Master Switch")
-Tab_Visuals:CreateToggle({Name = "Enable Player ESP", CurrentValue = false, Flag = "ESPToggle", Callback = function(Value) EspEnabled = Value end})
-
-Tab_Visuals:CreateSection("ESP Settings")
-Tab_Visuals:CreateToggle({Name = "Show Box", CurrentValue = true, Flag = "EspBoxToggle", Callback = function(Value) EspBox = Value end})
-Tab_Visuals:CreateToggle({Name = "Show Health", CurrentValue = true, Flag = "EspHealthToggle", Callback = function(Value) EspHealth = Value end})
-Tab_Visuals:CreateToggle({Name = "Show Name", CurrentValue = true, Flag = "EspNameToggle", Callback = function(Value) EspName = Value end})
-Tab_Visuals:CreateToggle({Name = "Show Distance", CurrentValue = true, Flag = "EspDistanceToggle", Callback = function(Value) EspDistance = Value end})
-
---// ==========================================
---// TRACERS SECTION (В САМОМ НИЗУ VISUALS)
---// ==========================================
-local TracersEnabled = false
-local TracerColor = Color3.fromRGB(255, 0, 0)
-local TracerThickness = 1.5
-local TracerTransparency = 0.5
-local TracersConnection = nil
-local ScreenGui = nil
-local tracers = {}
-
-local function SetupTracersGui()
-    if ScreenGui then ScreenGui:Destroy() end
-    ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "TracersGui"
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.Parent = player.PlayerGui
-end
-
-local function CreateTracerLine()
-    local frame = Instance.new("Frame")
-    frame.BackgroundColor3 = TracerColor
-    frame.BorderSizePixel = 0
-    frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    frame.Visible = true
-    frame.Parent = ScreenGui
-    return frame
-end
-
-local function UpdateTracers()
-    if not TracersEnabled then 
-        -- Только если выключили в меню, тогда скрываем все линии
-        for _, tracer in pairs(tracers) do
-            if tracer then tracer.Visible = false end
+        local function attachAsset(folder, armPartName, assetModelName, finalName, offset)
+            local targetArm = vm:FindFirstChild(armPartName)
+            if not targetArm then return end
+            local assetMesh = folder:WaitForChild(assetModelName):Clone()
+            cleanPart(assetMesh)
+            assetMesh.Name = finalName
+            assetMesh.Parent = targetArm
+            local motor = Instance.new("Motor6D")
+            motor.Part0, motor.Part1, motor.C0, motor.Parent = targetArm, assetMesh, offset, targetArm
         end
-        return 
-    end
-    
-    local screenCenterBottom = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-    local enemyFolder = getEnemyFolder()
-    
-    if not enemyFolder then return end
-    
-    for _, enemy in ipairs(enemyFolder:GetChildren()) do
-        local hum = enemy:FindFirstChildOfClass("Humanoid")
-        local leftFoot = enemy:FindFirstChild("LeftFoot")
-        local rightFoot = enemy:FindFirstChild("RightFoot")
-        
-        if hum and hum.Health > 0 and (leftFoot or rightFoot) then
-            local foot = leftFoot or rightFoot
-            local vector, onScreen = camera:WorldToViewportPoint(foot.Position)
-            
-            -- Всегда создаем/обновляем линию, даже если враг не на экране
-            local tracer = tracers[enemy]
-            if not tracer then
-                tracer = CreateTracerLine()
-                tracers[enemy] = tracer
+
+        local function handleAction(actionName, inputState, inputObject)
+            if inputState ~= Enum.UserInputState.Begin or not spawned or not animator or not isAlive() then return Enum.ContextActionResult.Pass end
+
+            if actionName == ACTION_INSPECT then
+                if (equipAnim and equipAnim.IsPlaying) or inspecting or swinging then return Enum.ContextActionResult.Pass end
+                inspecting = true
+                if idleAnim then idleAnim:Stop() end
+                inspectAnim:Play()
+                inspectAnim.Stopped:Once(function() inspecting = false end)
+            elseif actionName == ACTION_ATTACK then
+                local currentTime = os.clock()
+                if (equipAnim and equipAnim.IsPlaying) or (currentTime - lastAttackTime < ATTACK_COOLDOWN) then return Enum.ContextActionResult.Pass end
+                lastAttackTime = currentTime
+                if inspecting then inspecting = false; if inspectAnim then inspectAnim:Stop() end end
+                swinging = true
+                if idleAnim then idleAnim:Stop() end
+                local anims = {HeavySwingAnim, Swing1Anim, Swing2Anim}
+                local chosenAnim = anims[math.random(1, #anims)]
+                local soundFolder = (chosenAnim == HeavySwingAnim and "HitOne") or (chosenAnim == Swing1Anim and "HitTwo") or "HitThree"
+                chosenAnim:Play()
+                local s = playSound(soundFolder, "1")
+                if s then s.Volume = 5 end
+                chosenAnim.Stopped:Once(function() swinging = false end)
             end
-            
-            if onScreen then
-                local startPos = screenCenterBottom
-                local endPos = Vector2.new(vector.X, vector.Y)
-                
-                local distance = (endPos - startPos).Magnitude
-                local center = (startPos + endPos) / 2
-                local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
-                
-                tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
-                tracer.Position = UDim2.new(0, center.X, 0, center.Y)
-                tracer.Rotation = math.deg(rotation)
-                tracer.BackgroundColor3 = TracerColor
-                tracer.BackgroundTransparency = TracerTransparency
-                tracer.Visible = true
+            return Enum.ContextActionResult.Pass
+        end
+
+        local function removeViewmodel()
+            spawned = false
+            CAS:UnbindAction(ACTION_INSPECT)
+            CAS:UnbindAction(ACTION_ATTACK)
+            if vm then vm:Destroy() vm = nil end
+            animator, inspecting, swinging = nil, false, false
+        end
+
+        local function spawnViewmodel(knife)
+            if spawned or not scriptRunning then return end
+            local myModel = isAlive()
+            if not myModel then return end
+            spawned = true
+
+            local knifeTemplate = RS.Assets.Weapons:WaitForChild(selectedKnife)
+            local knifeOffset = knives[selectedKnife].Offset
+            vm = knifeTemplate:WaitForChild("Camera"):Clone()
+            vm.Name, vm.Parent = selectedKnife, camera
+
+            disableCollisions(vm)
+            hideOriginalKnife(knife)
+
+            if myModel.Parent.Name == "Terrorists" then
+                local tGloves = RS.Assets.Weapons:WaitForChild("T Glove")
+                attachAsset(tGloves, "Left Arm", "Left Arm", "Glove", CFrame.new(0, 0, -1.5))
+                attachAsset(tGloves, "Right Arm", "Right Arm", "Glove", CFrame.new(0, 0, -1.5))
             else
-                -- Если враг не на экране, линия все равно остается видимой, но направлена к краю
-                -- Или можно просто скрыть, но по твоему запросу они не должны пропадать
-                -- Оставляем видимыми, но направляем к краю экрана
-                local edgeX = math.clamp(vector.X, 10, camera.ViewportSize.X - 10)
-                local edgeY = math.clamp(vector.Y, 10, camera.ViewportSize.Y - 10)
-                local endPos = Vector2.new(edgeX, edgeY)
-                
-                local startPos = screenCenterBottom
-                local distance = (endPos - startPos).Magnitude
-                local center = (startPos + endPos) / 2
-                local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
-                
-                tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
-                tracer.Position = UDim2.new(0, center.X, 0, center.Y)
-                tracer.Rotation = math.deg(rotation)
-                tracer.BackgroundColor3 = TracerColor
-                tracer.BackgroundTransparency = TracerTransparency
-                tracer.Visible = true
+                local sleeves = RS.Assets.Sleeves:WaitForChild("IDF")
+                local ctGloves = RS.Assets.Weapons:WaitForChild("CT Glove")
+                attachAsset(sleeves, "Left Arm", "Left Arm", "Sleeve", CFrame.new(0, 0, 0.5))
+                attachAsset(ctGloves, "Left Arm", "Left Arm", "Glove", CFrame.new(0, 0, -1.5))
+                attachAsset(sleeves, "Right Arm", "Right Arm", "Sleeve", CFrame.new(0, 0, 0.5))
+                attachAsset(ctGloves, "Right Arm", "Right Arm", "Glove", CFrame.new(0, 0, -1.5))
             end
-        else
-            -- Если враг умер, но трейсер должен оставаться? Нет, убираем
-            if tracers[enemy] then
-                tracers[enemy].Visible = false
-            end
-        end
-    end
-    
-    -- Очистка только для умерших врагов
-    for enemy, tracer in pairs(tracers) do
-        if not enemy or not enemy.Parent then
-            if tracer then tracer:Destroy() end
-            tracers[enemy] = nil
-        end
-    end
-end
 
-Tab_Visuals:CreateSection("Tracers Settings")
+            local animController = vm:FindFirstChildOfClass("AnimationController") or vm:FindFirstChildOfClass("Animator")
+            animator = animController:FindFirstChildWhichIsA("Animator") or animController
+            local animFolder = RS.Assets.WeaponAnimations:WaitForChild(selectedKnife):WaitForChild("CameraAnimations")
 
-Tab_Visuals:CreateToggle({
-    Name = "Enable Tracers (To Enemy Feet)",
-    CurrentValue = false,
-    Flag = "TracersToggle",
-    Callback = function(Value)
-        TracersEnabled = Value
-        if Value then
-            SetupTracersGui()
-            if TracersConnection then TracersConnection:Disconnect() end
-            TracersConnection = RunService.RenderStepped:Connect(UpdateTracers)
-        else
-            if TracersConnection then 
-                TracersConnection:Disconnect()
-                TracersConnection = nil
+            equipAnim = animator:LoadAnimation(animFolder:WaitForChild("Equip"))
+            idleAnim = animator:LoadAnimation(animFolder:WaitForChild("Idle"))
+            inspectAnim = animator:LoadAnimation(animFolder:WaitForChild("Inspect"))
+            HeavySwingAnim = animator:LoadAnimation(animFolder:WaitForChild("Heavy Swing"))
+            Swing1Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing1"))
+            Swing2Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing2"))
+
+            vm:SetPrimaryPartCFrame(camera.CFrame * CFrame.new(0, -1.5, 5))
+            TweenService:Create(vm.PrimaryPart, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                CFrame = camera.CFrame * knifeOffset
+            }):Play()
+
+            equipAnim:Play()
+            playSound("Equip", "1")
+
+            CAS:BindAction(ACTION_INSPECT, handleAction, false, Enum.KeyCode.F)
+            CAS:BindAction(ACTION_ATTACK, handleAction, false, Enum.UserInputType.MouseButton1)
+        end
+
+        RunService.RenderStepped:Connect(function()
+            if not scriptRunning or not vm or not vm.PrimaryPart then return end
+            vm.PrimaryPart.CFrame = camera.CFrame * knives[selectedKnife].Offset
+            if not (equipAnim and equipAnim.IsPlaying) and not inspecting and not swinging then
+                if idleAnim and not idleAnim.IsPlaying then idleAnim:Play() end
             end
+        end)
+
+        task.spawn(function()
+            while task.wait(0.1) do
+                local living = isAlive()
+                local currentKnife = getKnifeInCamera()
+                if scriptRunning and living and currentKnife and not spawned then
+                    spawnViewmodel(currentKnife)
+                elseif (not scriptRunning or not currentKnife or not living) and spawned then
+                    removeViewmodel()
+                end
+            end
+        end)
+
+        local SkinChangerEnabled = false
+        local SelectedSkins = {}
+        local DropdownObjects = {}
+        local SkinOptions = {}
+        local COOLDOWN = 0.1
+        local WEAR = "Factory New"
+
+        local CT_ONLY = {["USP-S"]=true, ["Five-SeveN"]=true, ["MP9"]=true, ["FAMAS"]=true, ["M4A1-S"]=true, ["M4A4"]=true, ["AUG"]=true}
+        local SHARED = {["P250"]=true, ["Desert Eagle"]=true, ["Dual Berettas"]=true, ["Negev"]=true, ["P90"]=true, ["Nova"]=true, ["XM1014"]=true, ["AWP"]=true, ["SSG 08"]=true}
+        local KNIVES = {["Karambit"]=true, ["Butterfly Knife"]=true, ["M9 Bayonet"]=true, ["Flip Knife"]=true, ["Gut Knife"]=true, ["T Knife"]=true, ["CT Knife"]=true}
+        local GLOVES = {["Sports Gloves"]=true}
+        local SkinsFolder = RS:WaitForChild("Assets"):WaitForChild("Skins")
+        local IgnoreFolders = {["HE Grenade"]=true, ["Incendiary Grenade"]=true, ["Molotov"]=true, ["Smoke Grenade"]=true, ["Flashbang"]=true, ["Decoy Grenade"]=true, ["C4"]=true, ["CT Glove"]=true, ["T Glove"]=true}
+
+        local function applyWeaponSkin(model)
+            if not model or not SkinChangerEnabled or not isAlive() then return end
+            local skinName = SelectedSkins[model.Name]
+            if not skinName then return end
+
+            pcall(function()
+                local skinFolder = SkinsFolder:FindFirstChild(model.Name)
+                if not skinFolder then return end
+                local skinType = skinFolder:FindFirstChild(skinName)
+                local sourceFolder = skinType and skinType:FindFirstChild("Camera") and skinType.Camera:FindFirstChild(WEAR)
+                if not sourceFolder then return end
+
+                for _, obj in camera:GetChildren() do
+                    local left, right = obj:FindFirstChild("Left Arm"), obj:FindFirstChild("Right Arm")
+                    if left or right then
+                        local gloveFolder = SkinsFolder:FindFirstChild("Sports Gloves")
+                        local gloveSkin = gloveFolder and gloveFolder:FindFirstChild(SelectedSkins["Sports Gloves"])
+                        local gloveSource = gloveSkin and gloveSkin:FindFirstChild("Camera") and gloveSkin.Camera:FindFirstChild(WEAR)
+                        if gloveSource then
+                            for _, side in {"Left Arm", "Right Arm"} do
+                                local arm, src = obj:FindFirstChild(side), gloveSource:FindFirstChild(side)
+                                if arm and src then
+                                    local gloveMesh = arm:FindFirstChild("Glove")
+                                    if gloveMesh then
+                                        local existing = gloveMesh:FindFirstChildOfClass("SurfaceAppearance")
+                                        if existing then existing:Destroy() end
+                                        local clone = src:Clone()
+                                        clone.Name, clone.Parent = "SurfaceAppearance", gloveMesh
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                if not GLOVES[model.Name] then
+                    local weaponFolder = model:FindFirstChild("Weapon")
+                    if weaponFolder then
+                        for _, part in weaponFolder:GetDescendants() do
+                            if part:IsA("BasePart") then
+                                local newSkin = sourceFolder:FindFirstChild(part.Name)
+                                if newSkin then
+                                    local existing = part:FindFirstChildOfClass("SurfaceAppearance")
+                                    if existing then existing:Destroy() end
+                                    local clone = newSkin:Clone()
+                                    clone.Name, clone.Parent = "SurfaceAppearance", part
+                                end
+                            end
+                        end
+                    end
+                end
+                model:SetAttribute("SkinApplied", skinName)
+            end)
+        end
+
+        Tab_Skins:CreateToggle({
+            Name = "Enable Skin Changer",
+            CurrentValue = false,
+            Flag = "SkinChangerToggle",
+            Callback = function(Value)
+                SkinChangerEnabled = Value
+                if not Value then for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil) end end
+            end
+        })
+
+        Tab_Skins:CreateButton({
+            Name = "🎲 Randomize All Skins",
+            Callback = function()
+                for weaponName, optionsList in pairs(SkinOptions) do
+                    if #optionsList > 0 then
+                        local randomSkin = optionsList[math.random(1, #optionsList)]
+                        if DropdownObjects[weaponName] then
+                            for _, dropdown in ipairs(DropdownObjects[weaponName]) do dropdown:Set({randomSkin}) end
+                        end
+                    end
+                end
+            end,
+        })
+
+        local function CreateSkinDropdown(weaponName)
+            local folder = SkinsFolder:FindFirstChild(weaponName)
+            if not folder then return end
+
+            local options = {}
+            for _, skin in folder:GetChildren() do table.insert(options, skin.Name) end
+            SkinOptions[weaponName] = options
+
+            if not SelectedSkins[weaponName] then SelectedSkins[weaponName] = options[1] end
+
+            local dp = Tab_Skins:CreateDropdown({
+                Name = weaponName,
+                Options = options,
+                CurrentOption = {SelectedSkins[weaponName]},
+                Flag = "Skin_" .. weaponName,
+                Callback = function(opt)
+                    local newSkin = opt[1]
+                    SelectedSkins[weaponName] = newSkin
+                    if DropdownObjects[weaponName] then
+                        for _, other in DropdownObjects[weaponName] do
+                            if other.CurrentOption[1] ~= newSkin then other:Set({newSkin}) end
+                        end
+                    end
+                    for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil); applyWeaponSkin(obj) end
+                end
+            })
+            DropdownObjects[weaponName] = DropdownObjects[weaponName] or {}
+            table.insert(DropdownObjects[weaponName], dp)
+        end
+
+        Tab_Skins:CreateToggle({
+            Name = "Enable Custom Knife",
+            CurrentValue = false,
+            Flag = "KnifeToggle",
+            Callback = function(Value)
+                scriptRunning = Value; if not Value then removeViewmodel() end
+            end
+        })
+
+        Tab_Skins:CreateDropdown({
+            Name = "Selected Custom Knife",
+            Options = {"Butterfly Knife", "Karambit", "M9 Bayonet", "Flip Knife", "Gut Knife"},
+            CurrentOption = {"Butterfly Knife"},
+            MultipleOptions = false,
+            Flag = "KnifeDropdown",
+            Callback = function(Options)
+                selectedKnife = Options[1]; if spawned then removeViewmodel() end
+            end
+        })
+
+        Tab_Skins:CreateSection("Knives Skins")
+        for name in pairs(KNIVES) do CreateSkinDropdown(name) end
+        Tab_Skins:CreateSection("Gloves")
+        for name in pairs(GLOVES) do CreateSkinDropdown(name) end
+        Tab_Skins:CreateSection("CT Weapons")
+        for name in pairs(CT_ONLY) do CreateSkinDropdown(name) end
+        Tab_Skins:CreateSection("T Weapons")
+        for name in pairs(SHARED) do CreateSkinDropdown(name) end
+
+        for _, folder in SkinsFolder:GetChildren() do
+            local n = folder.Name
+            if not IgnoreFolders[n] and not KNIVES[n] and not GLOVES[n] and not CT_ONLY[n] and not SHARED[n] then CreateSkinDropdown(n) end
+        end
+
+        camera.ChildAdded:Connect(function(obj)
+            if not SkinChangerEnabled or not isAlive() then return end
+            task.wait(COOLDOWN); applyWeaponSkin(obj)
+        end)
+
+        task.spawn(function()
+            while task.wait(0.5) do
+                if SkinChangerEnabled and isAlive() then
+                    for _, obj in camera:GetChildren() do
+                        if SelectedSkins[obj.Name] and obj:GetAttribute("SkinApplied") ~= SelectedSkins[obj.Name] then applyWeaponSkin(obj) end
+                    end
+                end
+            end
+        end)
+
+        --// ==========================================
+        --// VISUALS TAB LOGIC (ESP & WORLD & TRACERS)
+        --// ==========================================
+        local EspEnabled, EspBox, EspName, EspHealth, EspDistance = false, true, true, true, true
+        local espCache = {}
+
+        local function createESP()
+            local esp = {
+                boxOutline = Drawing.new("Square"), box = Drawing.new("Square"),
+                name = Drawing.new("Text"), distance = Drawing.new("Text"),
+                healthOutline = Drawing.new("Line"), healthBar = Drawing.new("Line")
+            }
+            esp.boxOutline.Thickness = 3; esp.boxOutline.Filled = false; esp.boxOutline.Color = Color3.new(0, 0, 0)
+            esp.box.Thickness = 1; esp.box.Filled = false; esp.box.Color = Color3.fromRGB(255, 50, 50)
+            esp.name.Center = true; esp.name.Outline = true; esp.name.Color = Color3.new(1, 1, 1); esp.name.Size = 16
+            esp.distance.Center = true; esp.distance.Outline = true; esp.distance.Color = Color3.new(0.8, 0.8, 0.8); esp.distance.Size = 13
+            esp.healthOutline.Thickness = 3; esp.healthOutline.Color = Color3.new(0, 0, 0)
+            esp.healthBar.Thickness = 1; esp.healthBar.Color = Color3.new(0, 1, 0)
+            return esp
+        end
+
+        RunService.RenderStepped:Connect(function()
+            if not EspEnabled or not isAlive() then
+                for _, e in pairs(espCache) do for _, d in pairs(e) do d.Visible = false end end
+                return
+            end
+
+            local enemyFolder = getEnemyFolder()
+            if not enemyFolder then return end
+
+            local currentAlive = {}
+            for _, enemy in ipairs(enemyFolder:GetChildren()) do
+                local hum, root, head = enemy:FindFirstChildOfClass("Humanoid"), enemy:FindFirstChild("HumanoidRootPart"), enemy:FindFirstChild("Head")
+
+                if hum and hum.Health > 0 and root and head then
+                    currentAlive[enemy] = true
+                    if not espCache[enemy] then espCache[enemy] = createESP() end
+
+                    local esp = espCache[enemy]
+                    local rootPos, onScreen = camera:WorldToViewportPoint(root.Position)
+                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+
+                    if onScreen then
+                        local boxH, boxW = math.abs(headPos.Y - legPos.Y), math.abs(headPos.Y - legPos.Y) / 2
+                        local dist = math.floor((camera.CFrame.Position - root.Position).Magnitude)
+
+                        if EspBox then
+                            esp.boxOutline.Size = Vector2.new(boxW, boxH); esp.boxOutline.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.boxOutline.Visible = true
+                            esp.box.Size = Vector2.new(boxW, boxH); esp.box.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.box.Visible = true
+                        else esp.boxOutline.Visible, esp.box.Visible = false, false end
+
+                        if EspHealth then
+                            local hpPct, barX = hum.Health / hum.MaxHealth, rootPos.X - boxW / 2 - 6
+                            esp.healthOutline.From = Vector2.new(barX, headPos.Y - 1); esp.healthOutline.To = Vector2.new(barX, headPos.Y + boxH + 1); esp.healthOutline.Visible = true
+                            esp.healthBar.From = Vector2.new(barX, headPos.Y + boxH); esp.healthBar.To = Vector2.new(barX, headPos.Y + boxH - (boxH * hpPct)); esp.healthBar.Color = Color3.new(1 - hpPct, hpPct, 0); esp.healthBar.Visible = true
+                        else esp.healthOutline.Visible, esp.healthBar.Visible = false, false end
+
+                        if EspName then esp.name.Text = enemy.Name; esp.name.Position = Vector2.new(rootPos.X, headPos.Y - 20); esp.name.Visible = true 
+                        else esp.name.Visible = false end
+
+                        if EspDistance then esp.distance.Text = "[" .. dist .. "m]"; esp.distance.Position = Vector2.new(rootPos.X, headPos.Y + boxH + 2); esp.distance.Visible = true
+                        else esp.distance.Visible = false end
+                    else for _, d in pairs(esp) do d.Visible = false end end
+                end
+            end
+            for cEnemy, e in pairs(espCache) do
+                if not currentAlive[cEnemy] then for _, d in pairs(e) do d:Remove() end; espCache[cEnemy] = nil end
+            end
+        end)
+
+        Tab_Visuals:CreateSection("ESP Master Switch")
+        Tab_Visuals:CreateToggle({Name = "Enable Player ESP", CurrentValue = false, Flag = "ESPToggle", Callback = function(Value) EspEnabled = Value end})
+
+        Tab_Visuals:CreateSection("ESP Settings")
+        Tab_Visuals:CreateToggle({Name = "Show Box", CurrentValue = true, Flag = "EspBoxToggle", Callback = function(Value) EspBox = Value end})
+        Tab_Visuals:CreateToggle({Name = "Show Health", CurrentValue = true, Flag = "EspHealthToggle", Callback = function(Value) EspHealth = Value end})
+        Tab_Visuals:CreateToggle({Name = "Show Name", CurrentValue = true, Flag = "EspNameToggle", Callback = function(Value) EspName = Value end})
+        Tab_Visuals:CreateToggle({Name = "Show Distance", CurrentValue = true, Flag = "EspDistanceToggle", Callback = function(Value) EspDistance = Value end})
+
+        --// ==========================================
+        --// TRACERS SECTION (В САМОМ НИЗУ VISUALS)
+        --// ==========================================
+        local TracersEnabled = false
+        local TracerColor = Color3.fromRGB(255, 0, 0)
+        local TracerThickness = 1.5
+        local TracerTransparency = 0.5
+        local TracersConnection = nil
+        local ScreenGui = nil
+        local tracers = {}
+
+        local function SetupTracersGui()
             if ScreenGui then ScreenGui:Destroy() end
-            for _, tracer in pairs(tracers) do
-                if tracer then tracer:Destroy() end
+            ScreenGui = Instance.new("ScreenGui")
+            ScreenGui.Name = "TracersGui"
+            ScreenGui.IgnoreGuiInset = true
+            ScreenGui.Parent = player.PlayerGui
+        end
+
+        local function CreateTracerLine()
+            local frame = Instance.new("Frame")
+            frame.BackgroundColor3 = TracerColor
+            frame.BorderSizePixel = 0
+            frame.AnchorPoint = Vector2.new(0.5, 0.5)
+            frame.Visible = true
+            frame.Parent = ScreenGui
+            return frame
+        end
+
+        local function UpdateTracers()
+            if not TracersEnabled then 
+                for _, tracer in pairs(tracers) do
+                    if tracer then tracer.Visible = false end
+                end
+                return 
             end
-            tracers = {}
-        end
-    end
-})
-
-Tab_Visuals:CreateColorPicker({
-    Name = "Tracer Color",
-    Color = TracerColor,
-    Flag = "TracerColor",
-    Callback = function(Color)
-        TracerColor = Color
-    end
-})
-
-Tab_Visuals:CreateSlider({
-    Name = "Tracer Thickness",
-    Range = {0.5, 5},
-    Increment = 0.1,
-    Suffix = " px",
-    CurrentValue = 1.5,
-    Flag = "TracerThickness",
-    Callback = function(Value)
-        TracerThickness = Value
-    end
-})
-
-Tab_Visuals:CreateSlider({
-    Name = "Tracer Transparency",
-    Range = {0, 1},
-    Increment = 0.05,
-    Suffix = " (0 = solid, 1 = invisible)",
-    CurrentValue = 0.5,
-    Flag = "TracerTransparency",
-    Callback = function(Value)
-        TracerTransparency = Value
-    end
-})
-
-local AntiFlashEnabled, AntiSmokeEnabled = false, false
-Tab_Visuals:CreateSection("World & Effects")
-Tab_Visuals:CreateToggle({Name = "Anti-Flashbang", CurrentValue = false, Flag = "AntiFlashToggle", Callback = function(Value) AntiFlashEnabled = Value end})
-Tab_Visuals:CreateToggle({Name = "Anti-Smoke", CurrentValue = false, Flag = "AntiSmokeToggle", Callback = function(Value) AntiSmokeEnabled = Value end})
-
-task.spawn(function()
-    while task.wait(0.2) do
-        if AntiFlashEnabled then
-            local gui, effect = player.PlayerGui:FindFirstChild("FlashbangEffect"), game:GetService("Lighting"):FindFirstChild("FlashbangColorCorrection")
-            if gui then gui:Destroy() end; if effect then effect:Destroy() end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.5) do
-        if AntiSmokeEnabled then
-            local debris = Workspace:FindFirstChild("Debris")
-            if debris then
-                for _, folder in ipairs(debris:GetChildren()) do
-                    if string.match(folder.Name, "Voxel") then folder:ClearAllChildren(); folder:Destroy() end
+            
+            local screenCenterBottom = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+            local enemyFolder = getEnemyFolder()
+            
+            if not enemyFolder then return end
+            
+            for _, enemy in ipairs(enemyFolder:GetChildren()) do
+                local hum = enemy:FindFirstChildOfClass("Humanoid")
+                local leftFoot = enemy:FindFirstChild("LeftFoot")
+                local rightFoot = enemy:FindFirstChild("RightFoot")
+                
+                if hum and hum.Health > 0 and (leftFoot or rightFoot) then
+                    local foot = leftFoot or rightFoot
+                    local vector, onScreen = camera:WorldToViewportPoint(foot.Position)
+                    
+                    local tracer = tracers[enemy]
+                    if not tracer then
+                        tracer = CreateTracerLine()
+                        tracers[enemy] = tracer
+                    end
+                    
+                    if onScreen then
+                        local startPos = screenCenterBottom
+                        local endPos = Vector2.new(vector.X, vector.Y)
+                        
+                        local distance = (endPos - startPos).Magnitude
+                        local center = (startPos + endPos) / 2
+                        local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
+                        
+                        tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
+                        tracer.Position = UDim2.new(0, center.X, 0, center.Y)
+                        tracer.Rotation = math.deg(rotation)
+                        tracer.BackgroundColor3 = TracerColor
+                        tracer.BackgroundTransparency = TracerTransparency
+                        tracer.Visible = true
+                    else
+                        local edgeX = math.clamp(vector.X, 10, camera.ViewportSize.X - 10)
+                        local edgeY = math.clamp(vector.Y, 10, camera.ViewportSize.Y - 10)
+                        local endPos = Vector2.new(edgeX, edgeY)
+                        
+                        local startPos = screenCenterBottom
+                        local distance = (endPos - startPos).Magnitude
+                        local center = (startPos + endPos) / 2
+                        local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
+                        
+                        tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
+                        tracer.Position = UDim2.new(0, center.X, 0, center.Y)
+                        tracer.Rotation = math.deg(rotation)
+                        tracer.BackgroundColor3 = TracerColor
+                        tracer.BackgroundTransparency = TracerTransparency
+                        tracer.Visible = true
+                    end
+                else
+                    if tracers[enemy] then
+                        tracers[enemy].Visible = false
+                    end
+                end
+            end
+            
+            for enemy, tracer in pairs(tracers) do
+                if not enemy or not enemy.Parent then
+                    if tracer then tracer:Destroy() end
+                    tracers[enemy] = nil
                 end
             end
         end
-    end
-end)
 
-Rayfield:LoadConfiguration()
+        Tab_Visuals:CreateSection("Tracers Settings")
+
+        Tab_Visuals:CreateToggle({
+            Name = "Enable Tracers (To Enemy Feet)",
+            CurrentValue = false,
+            Flag = "TracersToggle",
+            Callback = function(Value)
+                TracersEnabled = Value
+                if Value then
+                    SetupTracersGui()
+                    if TracersConnection then TracersConnection:Disconnect() end
+                    TracersConnection = RunService.RenderStepped:Connect(UpdateTracers)
+                else
+                    if TracersConnection then 
+                        TracersConnection:Disconnect()
+                        TracersConnection = nil
+                    end
+                    if ScreenGui then ScreenGui:Destroy() end
+                    for _, tracer in pairs(tracers) do
+                        if tracer then tracer:Destroy() end
+                    end
+                    tracers = {}
+                end
+            end
+        })
+
+        Tab_Visuals:CreateColorPicker({
+            Name = "Tracer Color",
+            Color = TracerColor,
+            Flag = "TracerColor",
+            Callback = function(Color)
+                TracerColor = Color
+            end
+        })
+
+        Tab_Visuals:CreateSlider({
+            Name = "Tracer Thickness",
+            Range = {0.5, 5},
+            Increment = 0.1,
+            Suffix = " px",
+            CurrentValue = 1.5,
+            Flag = "TracerThickness",
+            Callback = function(Value)
+                TracerThickness = Value
+            end
+        })
+
+        Tab_Visuals:CreateSlider({
+            Name = "Tracer Transparency",
+            Range = {0, 1},
+            Increment = 0.05,
+            Suffix = " (0 = solid, 1 = invisible)",
+            CurrentValue = 0.5,
+            Flag = "TracerTransparency",
+            Callback = function(Value)
+                TracerTransparency = Value
+            end
+        })
+
+        local AntiFlashEnabled, AntiSmokeEnabled = false, false
+        Tab_Visuals:CreateSection("World & Effects")
+        Tab_Visuals:CreateToggle({Name = "Anti-Flashbang", CurrentValue = false, Flag = "AntiFlashToggle", Callback = function(Value) AntiFlashEnabled = Value end})
+        Tab_Visuals:CreateToggle({Name = "Anti-Smoke", CurrentValue = false, Flag = "AntiSmokeToggle", Callback = function(Value) AntiSmokeEnabled = Value end})
+
+        task.spawn(function()
+            while task.wait(0.2) do
+                if AntiFlashEnabled then
+                    local gui, effect = player.PlayerGui:FindFirstChild("FlashbangEffect"), game:GetService("Lighting"):FindFirstChild("FlashbangColorCorrection")
+                    if gui then gui:Destroy() end; if effect then effect:Destroy() end
+                end
+            end
+        end)
+
+        task.spawn(function()
+            while task.wait(0.5) do
+                if AntiSmokeEnabled then
+                    local debris = Workspace:FindFirstChild("Debris")
+                    if debris then
+                        for _, folder in ipairs(debris:GetChildren()) do
+                            if string.match(folder.Name, "Voxel") then folder:ClearAllChildren(); folder:Destroy() end
+                        end
+                    end
+                end
+            end
+        end)
+
+        Rayfield:LoadConfiguration()
+        
+        print("Main menu loaded successfully!")
+    ]])()
+end
+
+-- Обработка нажатия кнопки
+UnderstandButton.MouseButton1Click:Connect(function()
+    FadeOutAndLoadMainMenu()
+end)
