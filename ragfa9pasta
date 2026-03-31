@@ -53,8 +53,8 @@ end)
 -- Главный квадрат (Frame)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 520, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -210)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -76,13 +76,13 @@ UIStroke.Parent = MainFrame
 -- Заголовок
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Name = "TitleLabel"
-TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+TitleLabel.Size = UDim2.new(1, 0, 0, 55)
 TitleLabel.Position = UDim2.new(0, 0, 0, 15)
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "⚠️ WARNING / ВНИМАНИЕ ⚠️"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-TitleLabel.TextSize = 26
+TitleLabel.TextSize = 28
 TitleLabel.Parent = MainFrame
 
 -- Текст предупреждения
@@ -103,19 +103,19 @@ TextLabel.Parent = MainFrame
 -- Кнопка I UNDERSTAND
 local UnderstandButton = Instance.new("TextButton")
 UnderstandButton.Name = "UnderstandButton"
-UnderstandButton.Size = UDim2.new(0, 200, 0, 45)
-UnderstandButton.Position = UDim2.new(0.5, -100, 1, -65)
+UnderstandButton.Size = UDim2.new(0, 220, 0, 50)
+UnderstandButton.Position = UDim2.new(0.5, -110, 1, -70)
 UnderstandButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 UnderstandButton.Text = "I UNDERSTAND"
 UnderstandButton.Font = Enum.Font.GothamBold
-UnderstandButton.TextSize = 16
+UnderstandButton.TextSize = 18
 UnderstandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 UnderstandButton.AutoButtonColor = false
 UnderstandButton.Parent = MainFrame
 
 -- Скругляем кнопку
 local BtnCorner = Instance.new("UICorner")
-BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.CornerRadius = UDim.new(0, 10)
 BtnCorner.Parent = UnderstandButton
 
 -- Обводка кнопки
@@ -124,19 +124,18 @@ BtnStroke.Thickness = 2
 BtnStroke.Color = Color3.fromRGB(255, 0, 0)
 BtnStroke.Parent = UnderstandButton
 
--- Анимация переливания для обводки и кнопки
+-- Анимация переливания для обводки и кнопки (красно-белая)
 task.spawn(function()
     local hue = 0
     while WarningGui.Parent do
-        local color = Color3.fromHSV(hue, 1, 1)
-        local finalColor = color:Lerp(Color3.fromRGB(255, 255, 255), 0.5)
+        -- Красно-белое переливание (без радуги, только красный-белый)
+        local val = (math.sin(tick() * 3) + 1) / 2
+        local finalColor = Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(255, 255, 255), val)
         
         UIStroke.Color = finalColor
         BtnStroke.Color = finalColor
         TitleLabel.TextColor3 = finalColor
         
-        hue = hue + 0.008
-        if hue > 1 then hue = hue - 1 end
         task.wait(0.02)
     end
 end)
