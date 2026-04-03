@@ -126,9 +126,7 @@ BtnStroke.Parent = UnderstandButton
 
 -- Анимация переливания для обводки и кнопки (красно-белая)
 task.spawn(function()
-    local hue = 0
     while WarningGui.Parent do
-        -- Красно-белое переливание (без радуги, только красный-белый)
         local val = (math.sin(tick() * 3) + 1) / 2
         local finalColor = Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(255, 255, 255), val)
         
@@ -156,42 +154,32 @@ local function FadeOutAndLoadMainMenu()
     UnderstandButton.Text = "LOADING..."
     UnderstandButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
     
-    -- Анимация исчезновения для всех элементов
     local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     
-    -- Растворяем MainFrame
     local frameTween = TweenService:Create(MainFrame, tweenInfo, {
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 0, 0, 0)
     })
     frameTween:Play()
     
-    -- Растворяем контейнер с частицами
     local particleTween = TweenService:Create(ParticleContainer, tweenInfo, {
         BackgroundTransparency = 1
     })
     particleTween:Play()
     
-    -- Растворяем обводку
     local strokeTween = TweenService:Create(UIStroke, tweenInfo, {
         Transparency = 1
     })
     strokeTween:Play()
     
-    -- Ждем завершения анимации
     task.wait(0.6)
     
-    -- Удаляем Warning GUI
     WarningGui:Destroy()
-    
-    -- Убираем размытие
     Blur:Destroy()
     
-    -- Загружаем основное Rayfield меню
     loadstring([[
         local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/twistedk1d/BloxStrike/refs/heads/main/Source/UI/source.lua"))()
 
-        --// Window creation
         local Window = Rayfield:CreateWindow({
             Name = "https://t.me/bandits9script",
             Icon = 0,
@@ -209,7 +197,6 @@ local function FadeOutAndLoadMainMenu()
             }
         })
 
-        --// Services & Globals
         local RS = game:GetService("ReplicatedStorage")
         local RunService = game:GetService("RunService")
         local TweenService = game:GetService("TweenService")
@@ -217,10 +204,44 @@ local function FadeOutAndLoadMainMenu()
         local Players = game:GetService("Players")
         local Workspace = game:GetService("Workspace")
         local UserInputService = game:GetService("UserInputService")
+        local Lighting = game:GetService("Lighting")
 
         local player = Players.LocalPlayer
         local camera = Workspace.CurrentCamera
         local CharactersFolder = Workspace:WaitForChild("Characters", 10)
+
+        --// ==========================================
+        --// COLOR CORRECTION SETTINGS
+        --// ==========================================
+        local ColorCorrectionEnabled = false
+        local CurrentTintColor = Color3.fromRGB(180, 220, 255)
+        local CurrentBrightness = 0.05
+        local CurrentContrast = 0.1
+        local CurrentSaturation = 0.2
+        
+        local colorCorrection = nil
+
+        local function SetupColorCorrection(tintColor, brightness, contrast, saturation)
+            if not ColorCorrectionEnabled then return end
+            if not colorCorrection then
+                colorCorrection = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+                if not colorCorrection then
+                    colorCorrection = Instance.new("ColorCorrectionEffect")
+                    colorCorrection.Parent = Lighting
+                end
+            end
+            colorCorrection.TintColor = tintColor
+            colorCorrection.Brightness = brightness
+            colorCorrection.Contrast = contrast
+            colorCorrection.Saturation = saturation
+        end
+
+        local function DisableColorCorrection()
+            if colorCorrection then
+                colorCorrection:Destroy()
+                colorCorrection = nil
+            end
+        end
 
         --// ==========================================
         --// WEAPON CHAMS LOGIC
@@ -534,6 +555,84 @@ local function FadeOutAndLoadMainMenu()
                 end
             end
         })
+
+        --// ==========================================
+        --// OTHERS TAB - COLOR CORRECTION
+        --// ==========================================
+        Tab_Others:CreateSection("Color Correction")
+
+        Tab_Others:CreateToggle({
+            Name = "Enable Color Correction",
+            CurrentValue = false,
+            Flag = "ColorCorrectionToggle",
+            Callback = function(Value)
+                ColorCorrectionEnabled = Value
+                if Value then
+                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                else
+                    DisableColorCorrection()
+                end
+            end
+        })
+
+        Tab_Others:CreateColorPicker({
+            Name = "Tint Color",
+            Color = CurrentTintColor,
+            Flag = "TintColor",
+            Callback = function(Color)
+                CurrentTintColor = Color
+                if ColorCorrectionEnabled then
+                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                end
+            end
+        })
+
+        Tab_Others:CreateSlider({
+            Name = "Brightness",
+            Range = {-0.5, 0.5},
+            Increment = 0.01,
+            Suffix = "",
+            CurrentValue = 0.05,
+            Flag = "BrightnessSlider",
+            Callback = function(Value)
+                CurrentBrightness = Value
+                if ColorCorrectionEnabled then
+                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                end
+            end
+        })
+
+        Tab_Others:CreateSlider({
+            Name = "Contrast",
+            Range = {-0.5, 0.5},
+            Increment = 0.01,
+            Suffix = "",
+            CurrentValue = 0.1,
+            Flag = "ContrastSlider",
+            Callback = function(Value)
+                CurrentContrast = Value
+                if ColorCorrectionEnabled then
+                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                end
+            end
+        })
+
+        Tab_Others:CreateSlider({
+            Name = "Saturation",
+            Range = {-1, 1},
+            Increment = 0.01,
+            Suffix = "",
+            CurrentValue = 0.2,
+            Flag = "SaturationSlider",
+            Callback = function(Value)
+                CurrentSaturation = Value
+                if ColorCorrectionEnabled then
+                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                end
+            end
+        })
+
+        Tab_Others:CreateDivider()
 
         --// ==========================================
         --// OTHERS TAB - 4:3 ASPECT RATIO
@@ -1367,7 +1466,7 @@ local function FadeOutAndLoadMainMenu()
         Tab_Visuals:CreateToggle({Name = "Show Distance", CurrentValue = true, Flag = "EspDistanceToggle", Callback = function(Value) EspDistance = Value end})
 
         --// ==========================================
-        --// TRACERS SECTION (В САМОМ НИЗУ VISUALS)
+        --// TRACERS SECTION
         --// ==========================================
         local TracersEnabled = false
         local TracerColor = Color3.fromRGB(255, 0, 0)
@@ -1561,7 +1660,6 @@ local function FadeOutAndLoadMainMenu()
     ]])()
 end
 
--- Обработка нажатия кнопки
 UnderstandButton.MouseButton1Click:Connect(function()
     FadeOutAndLoadMainMenu()
 end)
