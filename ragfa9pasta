@@ -42,7 +42,6 @@ local function CreateParticle()
     tween.Completed:Connect(function() particle:Destroy() end)
 end
 
--- Запускаем частицы
 task.spawn(function()
     while WarningGui.Parent do
         CreateParticle()
@@ -61,19 +60,16 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = WarningGui
 
--- Скругляем углы
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
--- Красно-белая переливающаяся обводка
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Thickness = 3
 UIStroke.Color = Color3.fromRGB(255, 0, 0)
 UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 UIStroke.Parent = MainFrame
 
--- Заголовок
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(1, 0, 0, 55)
@@ -85,7 +81,6 @@ TitleLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
 TitleLabel.TextSize = 28
 TitleLabel.Parent = MainFrame
 
--- Текст предупреждения
 local TextLabel = Instance.new("TextLabel")
 TextLabel.Name = "TextLabel"
 TextLabel.Size = UDim2.new(0.9, 0, 0.55, 0)
@@ -100,7 +95,6 @@ TextLabel.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel.TextYAlignment = Enum.TextYAlignment.Top
 TextLabel.Parent = MainFrame
 
--- Кнопка I UNDERSTAND
 local UnderstandButton = Instance.new("TextButton")
 UnderstandButton.Name = "UnderstandButton"
 UnderstandButton.Size = UDim2.new(0, 220, 0, 50)
@@ -113,32 +107,26 @@ UnderstandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 UnderstandButton.AutoButtonColor = false
 UnderstandButton.Parent = MainFrame
 
--- Скругляем кнопку
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 10)
 BtnCorner.Parent = UnderstandButton
 
--- Обводка кнопки
 local BtnStroke = Instance.new("UIStroke")
 BtnStroke.Thickness = 2
 BtnStroke.Color = Color3.fromRGB(255, 0, 0)
 BtnStroke.Parent = UnderstandButton
 
--- Анимация переливания для обводки и кнопки (красно-белая)
 task.spawn(function()
     while WarningGui.Parent do
         local val = (math.sin(tick() * 3) + 1) / 2
         local finalColor = Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(255, 255, 255), val)
-        
         UIStroke.Color = finalColor
         BtnStroke.Color = finalColor
         TitleLabel.TextColor3 = finalColor
-        
         task.wait(0.02)
     end
 end)
 
--- Эффект свечения кнопки при наведении
 UnderstandButton.MouseEnter:Connect(function()
     TweenService:Create(UnderstandButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
     TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Thickness = 3}):Play()
@@ -149,31 +137,14 @@ UnderstandButton.MouseLeave:Connect(function()
     TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Thickness = 2}):Play()
 end)
 
--- Функция плавного исчезновения и загрузки основного меню
 local function FadeOutAndLoadMainMenu()
     UnderstandButton.Text = "LOADING..."
     UnderstandButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
-    
     local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    
-    local frameTween = TweenService:Create(MainFrame, tweenInfo, {
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 0, 0, 0)
-    })
-    frameTween:Play()
-    
-    local particleTween = TweenService:Create(ParticleContainer, tweenInfo, {
-        BackgroundTransparency = 1
-    })
-    particleTween:Play()
-    
-    local strokeTween = TweenService:Create(UIStroke, tweenInfo, {
-        Transparency = 1
-    })
-    strokeTween:Play()
-    
+    TweenService:Create(MainFrame, tweenInfo, {BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0)}):Play()
+    TweenService:Create(ParticleContainer, tweenInfo, {BackgroundTransparency = 1}):Play()
+    TweenService:Create(UIStroke, tweenInfo, {Transparency = 1}):Play()
     task.wait(0.6)
-    
     WarningGui:Destroy()
     Blur:Destroy()
     
@@ -218,7 +189,6 @@ local function FadeOutAndLoadMainMenu()
         local CurrentBrightness = 0.05
         local CurrentContrast = 0.1
         local CurrentSaturation = 0.2
-        
         local colorCorrection = nil
 
         local function SetupColorCorrection(tintColor, brightness, contrast, saturation)
@@ -251,22 +221,14 @@ local function FadeOutAndLoadMainMenu()
         local WeaponChamsConnection = nil
 
         local function ApplyWeaponNeon(obj, color)
-            local name = obj.Name
-            if name == "Hitbox" or name == "ViewmodelLight" or name == "Light" then
-                return 
-            end
-            
+            if obj.Name == "Hitbox" or obj.Name == "ViewmodelLight" or obj.Name == "Light" then return end
             if obj:IsA("BasePart") or obj:IsA("MeshPart") then
                 obj.Material = Enum.Material.Neon
                 obj.Color = color
                 obj.Transparency = 0
-                
                 for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then
-                        child:Destroy()
-                    elseif child:IsA("SpecialMesh") then
-                        child.TextureId = ""
-                    end
+                    if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then child:Destroy()
+                    elseif child:IsA("SpecialMesh") then child.TextureId = "" end
                 end
                 if obj:IsA("MeshPart") then obj.TextureID = "" end
             end
@@ -274,15 +236,10 @@ local function FadeOutAndLoadMainMenu()
 
         local function UpdateWeaponChams()
             if not WeaponChamsEnabled then return end
-            
             local models = {}
-            for _, obj in pairs(camera:GetChildren()) do
-                if obj:IsA("Model") then table.insert(models, obj) end
-            end
-            
+            for _, obj in pairs(camera:GetChildren()) do if obj:IsA("Model") then table.insert(models, obj) end end
             if #models > 0 then
                 local newest = models[#models]
-                
                 for _, model in pairs(models) do
                     if model ~= newest then
                         local oldW = model:FindFirstChild("Weapon")
@@ -292,9 +249,7 @@ local function FadeOutAndLoadMainMenu()
                     else
                         for _, child in pairs(model:GetDescendants()) do
                             if child.Name == "Weapon" or child.Name == "Handle" then
-                                for _, part in pairs(child:GetDescendants()) do
-                                    ApplyWeaponNeon(part, CurrentWeaponColor)
-                                end
+                                for _, part in pairs(child:GetDescendants()) do ApplyWeaponNeon(part, CurrentWeaponColor) end
                                 ApplyWeaponNeon(child, CurrentWeaponColor)
                             end
                         end
@@ -305,13 +260,9 @@ local function FadeOutAndLoadMainMenu()
 
         local function DisableWeaponChams()
             local models = {}
-            for _, obj in pairs(camera:GetChildren()) do
-                if obj:IsA("Model") then table.insert(models, obj) end
-            end
-            
+            for _, obj in pairs(camera:GetChildren()) do if obj:IsA("Model") then table.insert(models, obj) end end
             if #models > 0 then
                 local newest = models[#models]
-                
                 for _, model in pairs(models) do
                     if model ~= newest then
                         local oldW = model:FindFirstChild("Weapon")
@@ -351,41 +302,27 @@ local function FadeOutAndLoadMainMenu()
                 obj.Material = Enum.Material.Neon
                 obj.Color = color
                 obj.Transparency = 0
-                
                 for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("SurfaceAppearance") or child:IsA("Texture") or child:IsA("Decal") then
-                        child:Destroy()
-                    elseif child:IsA("SpecialMesh") then
-                        child.TextureId = ""
-                    end
+                    if child:IsA("SurfaceAppearance") or child:IsA("Texture") or child:IsA("Decal") then child:Destroy()
+                    elseif child:IsA("SpecialMesh") then child.TextureId = "" end
                 end
-                
-                if obj:IsA("MeshPart") then
-                    obj.TextureID = ""
-                end
+                if obj:IsA("MeshPart") then obj.TextureID = "" end
             end
         end
 
         local function UpdateHandChams()
             if not HandChamsEnabled then return end
-            
             for _, model in pairs(camera:GetChildren()) do
                 if model:IsA("Model") then
                     local leftArm = model:FindFirstChild("Left Arm")
                     local rightArm = model:FindFirstChild("Right Arm")
-                    
                     if leftArm then
                         ApplyHandNeon(leftArm, CurrentHandColor)
-                        for _, part in pairs(leftArm:GetDescendants()) do
-                            ApplyHandNeon(part, CurrentHandColor)
-                        end
+                        for _, part in pairs(leftArm:GetDescendants()) do ApplyHandNeon(part, CurrentHandColor) end
                     end
-                    
                     if rightArm then
                         ApplyHandNeon(rightArm, CurrentHandColor)
-                        for _, part in pairs(rightArm:GetDescendants()) do
-                            ApplyHandNeon(part, CurrentHandColor)
-                        end
+                        for _, part in pairs(rightArm:GetDescendants()) do ApplyHandNeon(part, CurrentHandColor) end
                     end
                 end
             end
@@ -396,7 +333,6 @@ local function FadeOutAndLoadMainMenu()
                 if model:IsA("Model") then
                     local leftArm = model:FindFirstChild("Left Arm")
                     local rightArm = model:FindFirstChild("Right Arm")
-                    
                     if leftArm then
                         if leftArm:IsA("BasePart") then
                             leftArm.Material = Enum.Material.Plastic
@@ -409,7 +345,6 @@ local function FadeOutAndLoadMainMenu()
                             end
                         end
                     end
-                    
                     if rightArm then
                         if rightArm:IsA("BasePart") then
                             rightArm.Material = Enum.Material.Plastic
@@ -443,10 +378,7 @@ local function FadeOutAndLoadMainMenu()
         end
 
         local function StopAspectEffect()
-            if AspectConnection then
-                AspectConnection:Disconnect()
-                AspectConnection = nil
-            end
+            if AspectConnection then AspectConnection:Disconnect(); AspectConnection = nil end
         end
 
         --// ==========================================
@@ -455,8 +387,8 @@ local function FadeOutAndLoadMainMenu()
         local Tab_Combat  = Window:CreateTab("Combat", "crosshair")
         local Tab_Skins   = Window:CreateTab("Skins", "swords")
         local Tab_Visuals = Window:CreateTab("Visuals", "eye")
-        local Tab_Chams = Window:CreateTab("Chams", "eye")
-        local Tab_Others = Window:CreateTab("Others", "settings")
+        local Tab_Chams   = Window:CreateTab("Chams", "eye")
+        local Tab_Others  = Window:CreateTab("Others", "settings")
 
         Tab_Skins:CreateLabel("nu okey ya spizdil i sto(gay)", "code", Color3.fromRGB(80,80,80), false)
 
@@ -464,7 +396,6 @@ local function FadeOutAndLoadMainMenu()
         --// WEAPON CHAMS SECTION
         --// ==========================================
         Tab_Chams:CreateSection("Weapon Chams")
-
         Tab_Chams:CreateToggle({
             Name = "Enable Weapon Chams",
             CurrentValue = false,
@@ -476,43 +407,27 @@ local function FadeOutAndLoadMainMenu()
                     if WeaponChamsConnection then WeaponChamsConnection:Disconnect() end
                     WeaponChamsConnection = RunService.RenderStepped:Connect(UpdateWeaponChams)
                 else
-                    if WeaponChamsConnection then 
-                        WeaponChamsConnection:Disconnect()
-                        WeaponChamsConnection = nil
-                    end
+                    if WeaponChamsConnection then WeaponChamsConnection:Disconnect(); WeaponChamsConnection = nil end
                     DisableWeaponChams()
                 end
             end
         })
-
         Tab_Chams:CreateSection("Weapon Color")
-
         local WeaponColorPicker = Tab_Chams:CreateColorPicker({
             Name = "Select Weapon Color",
             Color = CurrentWeaponColor,
             Flag = "WeaponColorPicker",
-            Callback = function(Color)
-                CurrentWeaponColor = Color
-                if WeaponChamsEnabled then
-                    UpdateWeaponChams()
-                end
-            end
+            Callback = function(Color) CurrentWeaponColor = Color; if WeaponChamsEnabled then UpdateWeaponChams() end end
         })
-
         Tab_Chams:CreateButton({
             Name = "Apply Weapon Color",
-            Callback = function()
-                if WeaponChamsEnabled then
-                    UpdateWeaponChams()
-                end
-            end
+            Callback = function() if WeaponChamsEnabled then UpdateWeaponChams() end end
         })
 
         --// ==========================================
         --// HAND CHAMS SECTION
         --// ==========================================
         Tab_Chams:CreateSection("Hand Chams")
-
         Tab_Chams:CreateToggle({
             Name = "Enable Hand Chams",
             CurrentValue = false,
@@ -524,147 +439,71 @@ local function FadeOutAndLoadMainMenu()
                     if HandChamsConnection then HandChamsConnection:Disconnect() end
                     HandChamsConnection = RunService.RenderStepped:Connect(UpdateHandChams)
                 else
-                    if HandChamsConnection then 
-                        HandChamsConnection:Disconnect()
-                        HandChamsConnection = nil
-                    end
+                    if HandChamsConnection then HandChamsConnection:Disconnect(); HandChamsConnection = nil end
                     DisableHandChams()
                 end
             end
         })
-
         Tab_Chams:CreateSection("Hand Color")
-
         local HandColorPicker = Tab_Chams:CreateColorPicker({
             Name = "Select Hand Color",
             Color = CurrentHandColor,
             Flag = "HandColorPicker",
-            Callback = function(Color)
-                CurrentHandColor = Color
-                if HandChamsEnabled then
-                    UpdateHandChams()
-                end
-            end
+            Callback = function(Color) CurrentHandColor = Color; if HandChamsEnabled then UpdateHandChams() end end
         })
-
         Tab_Chams:CreateButton({
             Name = "Apply Hand Color",
-            Callback = function()
-                if HandChamsEnabled then
-                    UpdateHandChams()
-                end
-            end
+            Callback = function() if HandChamsEnabled then UpdateHandChams() end end
         })
 
         --// ==========================================
         --// OTHERS TAB - COLOR CORRECTION
         --// ==========================================
         Tab_Others:CreateSection("Color Correction")
-
         Tab_Others:CreateToggle({
             Name = "Enable Color Correction",
             CurrentValue = false,
             Flag = "ColorCorrectionToggle",
             Callback = function(Value)
                 ColorCorrectionEnabled = Value
-                if Value then
-                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
-                else
-                    DisableColorCorrection()
-                end
+                if Value then SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
+                else DisableColorCorrection() end
             end
         })
-
         Tab_Others:CreateColorPicker({
             Name = "Tint Color",
             Color = CurrentTintColor,
             Flag = "TintColor",
-            Callback = function(Color)
-                CurrentTintColor = Color
-                if ColorCorrectionEnabled then
-                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
-                end
-            end
+            Callback = function(Color) CurrentTintColor = Color; if ColorCorrectionEnabled then SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation) end end
         })
-
         Tab_Others:CreateSlider({
-            Name = "Brightness",
-            Range = {-0.5, 0.5},
-            Increment = 0.01,
-            Suffix = "",
-            CurrentValue = 0.05,
-            Flag = "BrightnessSlider",
-            Callback = function(Value)
-                CurrentBrightness = Value
-                if ColorCorrectionEnabled then
-                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
-                end
-            end
+            Name = "Brightness", Range = {-0.5, 0.5}, Increment = 0.01, CurrentValue = 0.05, Flag = "BrightnessSlider",
+            Callback = function(Value) CurrentBrightness = Value; if ColorCorrectionEnabled then SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation) end end
         })
-
         Tab_Others:CreateSlider({
-            Name = "Contrast",
-            Range = {-0.5, 0.5},
-            Increment = 0.01,
-            Suffix = "",
-            CurrentValue = 0.1,
-            Flag = "ContrastSlider",
-            Callback = function(Value)
-                CurrentContrast = Value
-                if ColorCorrectionEnabled then
-                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
-                end
-            end
+            Name = "Contrast", Range = {-0.5, 0.5}, Increment = 0.01, CurrentValue = 0.1, Flag = "ContrastSlider",
+            Callback = function(Value) CurrentContrast = Value; if ColorCorrectionEnabled then SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation) end end
         })
-
         Tab_Others:CreateSlider({
-            Name = "Saturation",
-            Range = {-1, 1},
-            Increment = 0.01,
-            Suffix = "",
-            CurrentValue = 0.2,
-            Flag = "SaturationSlider",
-            Callback = function(Value)
-                CurrentSaturation = Value
-                if ColorCorrectionEnabled then
-                    SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation)
-                end
-            end
+            Name = "Saturation", Range = {-1, 1}, Increment = 0.01, CurrentValue = 0.2, Flag = "SaturationSlider",
+            Callback = function(Value) CurrentSaturation = Value; if ColorCorrectionEnabled then SetupColorCorrection(CurrentTintColor, CurrentBrightness, CurrentContrast, CurrentSaturation) end end
         })
-
         Tab_Others:CreateDivider()
 
         --// ==========================================
         --// OTHERS TAB - 4:3 ASPECT RATIO
         --// ==========================================
         Tab_Others:CreateSection("Aspect Ratio Settings")
-
         Tab_Others:CreateToggle({
             Name = "Enable 4:3 Stretched Aspect Ratio",
             CurrentValue = false,
             Flag = "AspectToggle",
-            Callback = function(Value)
-                AspectEnabled = Value
-                if Value then
-                    StartAspectEffect()
-                else
-                    StopAspectEffect()
-                end
-            end
+            Callback = function(Value) AspectEnabled = Value; if Value then StartAspectEffect() else StopAspectEffect() end end
         })
-
         Tab_Others:CreateSlider({
-            Name = "Stretch Value (0.1 - 1.0)",
-            Range = {0.1, 1.0},
-            Increment = 0.01,
-            Suffix = " (lower = more stretch)",
-            CurrentValue = 1.0,
-            Flag = "AspectSlider",
-            Callback = function(Value)
-                AspectValue = Value
-            end
+            Name = "Stretch Value (0.1 - 1.0)", Range = {0.1, 1.0}, Increment = 0.01, CurrentValue = 1.0, Flag = "AspectSlider",
+            Callback = function(Value) AspectValue = Value end
         })
-
         Tab_Others:CreateLabel("ℹ️ Info: Lower stretch value = wider screen effect. 0.5 = classic 4:3 stretched look", "info", Color3.fromRGB(100, 100, 255), false)
 
         --// ==========================================
@@ -672,12 +511,10 @@ local function FadeOutAndLoadMainMenu()
         --// ==========================================
         local function getTFolder() return CharactersFolder:FindFirstChild("Terrorists") end
         local function getCTFolder() return CharactersFolder:FindFirstChild("Counter-Terrorists") end
-
         local function isAlive()
             local t, ct = getTFolder(), getCTFolder()
             return (t and t:FindFirstChild(player.Name)) or (ct and ct:FindFirstChild(player.Name))
         end
-
         local function getEnemyFolder()
             if not isAlive() then return nil end
             local t, ct = getTFolder(), getCTFolder()
@@ -685,53 +522,49 @@ local function FadeOutAndLoadMainMenu()
             if ct and ct:FindFirstChild(player.Name) then return t end
             return nil
         end
-
         local function isVisible(part)
             if not part then return false end
-            
             local origin = camera.CFrame.Position
             local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
-            
             local raycastParams = RaycastParams.new()
             raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
             raycastParams.FilterDescendantsInstances = {player.Character, camera, part.Parent}
             raycastParams.IgnoreWater = true
-            
             local result = Workspace:Raycast(origin, direction, raycastParams)
-            
             if result and result.Instance then
                 local hitPart = result.Instance
                 local hitModel = hitPart:FindFirstAncestorOfClass("Model")
-                if hitModel and hitModel == part.Parent then
-                    return true
-                end
+                if hitModel and hitModel == part.Parent then return true end
                 return false
             end
             return true
         end
 
         --// ==========================================
-        --// AIMBOT & FOV LOGIC
+        --// УЛУЧШЕННЫЙ AIMBOT + RCS + ВРЕМЯ РЕАКЦИИ + ВЫБОР ЛЮБОЙ ЧАСТИ ТЕЛА
         --// ==========================================
         local AimbotEnabled = false
         local AutoAimEnabled = false
-        local MobileAimEnabled = false
         local ShowFOV = false
         local FOV_Radius = 100
         local Smoothing = 3
         local AimKey = Enum.UserInputType.MouseButton2
         local isAiming = false
-
-        local StaticFOVCircle = Drawing.new("Circle")
-        StaticFOVCircle.Radius = FOV_Radius
-        StaticFOVCircle.Filled = false
-        StaticFOVCircle.Color = Color3.fromRGB(255, 255, 255)
-        StaticFOVCircle.Visible = false
-        StaticFOVCircle.Thickness = 1
-        StaticFOVCircle.NumSides = 64
-        StaticFOVCircle.Transparency = 0.5
-        StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-
+        -- RCS
+        local RCSEnabled = false
+        local RCSPitch = 0.25
+        local RCSYaw = 0.15
+        local ShotCount = 0
+        local LastShotTime = 0
+        local RCSResetDelay = 0.5
+        -- Время реакции
+        local ReactionTime = 0
+        local LastTargetTime = 0
+        -- Целевая часть тела (расширенный список)
+        local AimPart = "Head"
+        -- Плавность
+        local AimbotSmoothingType = "Lerp"
+        -- Только динамический FOV (вокруг мыши)
         local DynamicFOVCircle = Drawing.new("Circle")
         DynamicFOVCircle.Radius = FOV_Radius
         DynamicFOVCircle.Filled = false
@@ -741,13 +574,32 @@ local function FadeOutAndLoadMainMenu()
         DynamicFOVCircle.NumSides = 64
         DynamicFOVCircle.Transparency = 0.5
 
+        local function GetAimPosition(enemy)
+            if AimPart == "Head" then
+                return enemy:FindFirstChild("Head")
+            elseif AimPart == "Chest" then
+                local chest = enemy:FindFirstChild("HumanoidRootPart")
+                if not chest then chest = enemy:FindFirstChild("UpperTorso") end
+                return chest
+            elseif AimPart == "Left Arm" then
+                return enemy:FindFirstChild("Left Arm") or enemy:FindFirstChild("LeftArm")
+            elseif AimPart == "Right Arm" then
+                return enemy:FindFirstChild("Right Arm") or enemy:FindFirstChild("RightArm")
+            elseif AimPart == "Left Leg" then
+                return enemy:FindFirstChild("Left Leg") or enemy:FindFirstChild("LeftLeg")
+            elseif AimPart == "Right Leg" then
+                return enemy:FindFirstChild("Right Leg") or enemy:FindFirstChild("RightLeg")
+            else
+                return enemy:FindFirstChild("Head")
+            end
+        end
+
         local function getClosestEnemyInFOV(useStaticFOV)
             local closestEnemy = nil
             local closestDistance = FOV_Radius
             local enemyFolder = getEnemyFolder()
-
             if not enemyFolder then return nil end
-            if not AimbotEnabled and not AutoAimEnabled and not MobileAimEnabled then return nil end
+            if not AimbotEnabled and not AutoAimEnabled then return nil end
 
             local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
             local mousePos = UserInputService:GetMouseLocation()
@@ -755,56 +607,55 @@ local function FadeOutAndLoadMainMenu()
 
             for _, enemy in ipairs(enemyFolder:GetChildren()) do
                 local hum = enemy:FindFirstChildOfClass("Humanoid")
-                local head = enemy:FindFirstChild("Head")
-                
-                if hum and hum.Health > 0 and head then
-                    local headPos, onScreen = camera:WorldToViewportPoint(head.Position)
-                    
+                local aimPart = GetAimPosition(enemy)
+                if hum and hum.Health > 0 and aimPart then
+                    local pos, onScreen = camera:WorldToViewportPoint(aimPart.Position)
                     if onScreen then
-                        local distanceToFOV = (Vector2.new(headPos.X, headPos.Y) - fovCenter).Magnitude
-                        
+                        local distanceToFOV = (Vector2.new(pos.X, pos.Y) - fovCenter).Magnitude
                         if distanceToFOV <= FOV_Radius then
-                            if isVisible(head) then
-                                local distanceToCenter = (Vector2.new(headPos.X, headPos.Y) - screenCenter).Magnitude
-                                
+                            if isVisible(aimPart) then
+                                local distanceToCenter = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
                                 if distanceToCenter < closestDistance then
                                     closestDistance = distanceToCenter
-                                    closestEnemy = head
+                                    closestEnemy = enemy
                                 end
                             end
                         end
                     end
                 end
             end
-            
             return closestEnemy
         end
 
-        UserInputService.InputBegan:Connect(function(input)
-            if input.UserInputType == AimKey then 
-                isAiming = true 
+        local function UpdateRCS()
+            if not RCSEnabled then return end
+            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                local now = tick()
+                if now - LastShotTime > 0.05 then
+                    ShotCount = ShotCount + 1
+                    LastShotTime = now
+                    local moveX = -RCSYaw * (ShotCount * 0.5)
+                    local moveY = RCSPitch * (ShotCount * 0.5)
+                    if mousemoverel then mousemoverel(moveX, moveY) end
+                end
+            else
+                if tick() - LastShotTime > RCSResetDelay then
+                    ShotCount = 0
+                end
             end
-        end)
+        end
 
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == AimKey then isAiming = true end
+        end)
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == AimKey then 
-                isAiming = false 
-            end
+            if input.UserInputType == AimKey then isAiming = false end
         end)
 
         RunService.RenderStepped:Connect(function()
             if ShowFOV then
                 local mousePos = UserInputService:GetMouseLocation()
-                
-                if MobileAimEnabled then
-                    StaticFOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-                    StaticFOVCircle.Radius = FOV_Radius
-                    StaticFOVCircle.Visible = true
-                else
-                    StaticFOVCircle.Visible = false
-                end
-                
-                if (AimbotEnabled or AutoAimEnabled) and not MobileAimEnabled then
+                if AimbotEnabled or AutoAimEnabled then
                     DynamicFOVCircle.Position = mousePos
                     DynamicFOVCircle.Radius = FOV_Radius
                     DynamicFOVCircle.Visible = true
@@ -812,123 +663,71 @@ local function FadeOutAndLoadMainMenu()
                     DynamicFOVCircle.Visible = false
                 end
             else
-                StaticFOVCircle.Visible = false
                 DynamicFOVCircle.Visible = false
             end
 
             if not isAlive() then return end
-            
+
             local shouldAim = false
             local useStaticFOV = false
-            
-            if MobileAimEnabled then
+            if AutoAimEnabled then
                 shouldAim = true
                 useStaticFOV = true
-            elseif AutoAimEnabled then
-                shouldAim = true
-                useStaticFOV = false
             elseif AimbotEnabled and isAiming then
                 shouldAim = true
                 useStaticFOV = false
             end
-            
             if not shouldAim then return end
 
-            local targetHead = getClosestEnemyInFOV(useStaticFOV)
-            
-            if targetHead then
-                local headPos = camera:WorldToViewportPoint(targetHead.Position)
-                
-                if headPos.Z > 0 then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local deltaX = headPos.X - mousePos.X
-                    local deltaY = headPos.Y - mousePos.Y
-                    local moveX = deltaX / Smoothing
-                    local moveY = deltaY / Smoothing
-                    
-                    if mousemoverel then
-                        mousemoverel(moveX, moveY)
+            local targetEnemy = getClosestEnemyInFOV(useStaticFOV)
+            if targetEnemy then
+                local aimPart = GetAimPosition(targetEnemy)
+                if aimPart then
+                    local now = tick()
+                    if now - LastTargetTime >= (ReactionTime / 1000) then
+                        LastTargetTime = now
+                        local targetPos = camera:WorldToViewportPoint(aimPart.Position)
+                        if targetPos.Z > 0 then
+                            local mousePos = UserInputService:GetMouseLocation()
+                            local targetVec = Vector2.new(targetPos.X, targetPos.Y)
+                            if AimbotSmoothingType == "Lerp" then
+                                local factor = math.clamp(1 / Smoothing, 0.05, 1)
+                                local newMouse = mousePos:Lerp(targetVec, factor)
+                                local moveDelta = newMouse - mousePos
+                                if mousemoverel then mousemoverel(moveDelta.X, moveDelta.Y) end
+                            else
+                                if mousemoverel then mousemoverel((targetVec.X - mousePos.X) / Smoothing, (targetVec.Y - mousePos.Y) / Smoothing) end
+                            end
+                        end
                     end
                 end
             end
+            UpdateRCS()
         end)
 
         --// ==========================================
         --// COMBAT TAB UI
         --// ==========================================
         Tab_Combat:CreateSection("Aimbot Settings")
-        Tab_Combat:CreateToggle({
-            Name = "Enable Aimbot (Hold Right Click)",
-            CurrentValue = false,
-            Flag = "AimbotToggle",
-            Callback = function(Value) AimbotEnabled = Value end
-        })
+        Tab_Combat:CreateToggle({Name = "Enable Aimbot (Hold Right Click)", CurrentValue = false, Flag = "AimbotToggle", Callback = function(Value) AimbotEnabled = Value end})
+        Tab_Combat:CreateToggle({Name = "AUTO AIM (Always Active / Center FOV)", CurrentValue = false, Flag = "AutoAimToggle", Callback = function(Value) AutoAimEnabled = Value end})
+        Tab_Combat:CreateToggle({Name = "Show FOV Circle (dynamic, around mouse)", CurrentValue = false, Flag = "FOVToggle", Callback = function(Value) ShowFOV = Value end})
+        Tab_Combat:CreateSlider({Name = "FOV Radius", Range = {10, 500}, Increment = 10, Suffix = "px", CurrentValue = 100, Flag = "FOVSlider", Callback = function(Value) FOV_Radius = Value end})
+        Tab_Combat:CreateSlider({Name = "Aimbot Smoothing (1 = max smooth, 20 = very slow)", Range = {1, 20}, Increment = 1, Suffix = "", CurrentValue = 3, Flag = "AimbotSmoothing", Callback = function(Value) Smoothing = Value end})
+        Tab_Combat:CreateDropdown({Name = "Smoothing Type", Options = {"Lerp (smoother)", "Classic (dividing)"}, CurrentOption = {"Lerp (smoother)"}, Flag = "SmoothingType", Callback = function(opt) AimbotSmoothingType = (opt[1] == "Lerp (smoother)") and "Lerp" or "Classic" end})
+        Tab_Combat:CreateSlider({Name = "Reaction Time (ms)", Range = {0, 500}, Increment = 10, Suffix = "ms", CurrentValue = 0, Flag = "ReactionTime", Callback = function(Value) ReactionTime = Value end})
+        Tab_Combat:CreateDropdown({Name = "Aim Target", Options = {"Head", "Chest", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}, CurrentOption = {"Head"}, Flag = "AimTarget", Callback = function(opt) AimPart = opt[1] end})
 
-        Tab_Combat:CreateToggle({
-            Name = "AUTO AIM (Always Active / No Hold)",
-            CurrentValue = false,
-            Flag = "AutoAimToggle",
-            Callback = function(Value) AutoAimEnabled = Value end
-        })
-
-        Tab_Combat:CreateToggle({
-            Name = "MOBILE AIM (Static FOV / Always Active)",
-            CurrentValue = false,
-            Flag = "MobileAimToggle",
-            Callback = function(Value) MobileAimEnabled = Value end
-        })
-
-        Tab_Combat:CreateToggle({
-            Name = "Show FOV Circle",
-            CurrentValue = false,
-            Flag = "FOVToggle",
-            Callback = function(Value) ShowFOV = Value end
-        })
-
-        Tab_Combat:CreateSlider({
-            Name = "FOV Radius",
-            Range = {10, 500},
-            Increment = 10,
-            Suffix = "px",
-            CurrentValue = 100,
-            Flag = "FOVSlider",
-            Callback = function(Value) FOV_Radius = Value end
-        })
-
-        Tab_Combat:CreateSlider({
-            Name = "Aimbot Smoothing",
-            Range = {1, 20},
-            Increment = 1,
-            Suffix = " (1 = instant, 20 = very smooth)",
-            CurrentValue = 3,
-            Flag = "AimbotSmoothing",
-            Callback = function(Value) Smoothing = Value end
-        })
-
-        --// ==========================================
-        --// TRIGGERBOT LOGIC
-        --// ==========================================
-        local TriggerBotEnabled = false
-        local TriggerBotDelay = 0
+        Tab_Combat:CreateSection("RCS (Recoil Control System)")
+        Tab_Combat:CreateToggle({Name = "Enable RCS", CurrentValue = false, Flag = "RCSToggle", Callback = function(Value) RCSEnabled = Value end})
+        Tab_Combat:CreateSlider({Name = "Vertical Compensation (Pitch)", Range = {0, 0.8}, Increment = 0.01, Suffix = "", CurrentValue = 0.25, Flag = "RCSPitch", Callback = function(Value) RCSPitch = Value end})
+        Tab_Combat:CreateSlider({Name = "Horizontal Compensation (Yaw)", Range = {0, 0.5}, Increment = 0.01, Suffix = "", CurrentValue = 0.15, Flag = "RCSYaw", Callback = function(Value) RCSYaw = Value end})
 
         Tab_Combat:CreateSection("TriggerBot Settings")
-        Tab_Combat:CreateToggle({
-            Name = "Enable TriggerBot",
-            CurrentValue = false,
-            Flag = "TriggerBotToggle",
-            Callback = function(Value) TriggerBotEnabled = Value end
-        })
-
-        Tab_Combat:CreateSlider({
-            Name = "Shot Delay",
-            Range = {0, 500},
-            Increment = 10,
-            Suffix = "ms",
-            CurrentValue = 0,
-            Flag = "TriggerBotDelay",
-            Callback = function(Value) TriggerBotDelay = Value end
-        })
-
+        local TriggerBotEnabled = false
+        local TriggerBotDelay = 0
+        Tab_Combat:CreateToggle({Name = "Enable TriggerBot", CurrentValue = false, Flag = "TriggerBotToggle", Callback = function(Value) TriggerBotEnabled = Value end})
+        Tab_Combat:CreateSlider({Name = "Shot Delay", Range = {0, 500}, Increment = 10, Suffix = "ms", CurrentValue = 0, Flag = "TriggerBotDelay", Callback = function(Value) TriggerBotDelay = Value end})
         task.spawn(function()
             while task.wait(0.01) do
                 if TriggerBotEnabled and isAlive() then
@@ -936,13 +735,10 @@ local function FadeOutAndLoadMainMenu()
                     local ray = camera:ViewportPointToRay(viewportSize.X / 2, viewportSize.Y / 2)
                     local raycastParams = RaycastParams.new()
                     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
                     local ignoreList = {camera}
                     if player.Character then table.insert(ignoreList, player.Character) end
                     raycastParams.FilterDescendantsInstances = ignoreList
-
                     local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000, raycastParams)
-
                     if result and result.Instance then
                         local hitPart = result.Instance
                         local model = hitPart:FindFirstAncestorOfClass("Model")
@@ -965,31 +761,12 @@ local function FadeOutAndLoadMainMenu()
             end
         end)
 
-        --// ==========================================
-        --// SIMPLE HITBOX LOGIC
-        --// ==========================================
+        Tab_Combat:CreateSection("Simple Hitbox (Max 3)")
         local HitboxEnabled = false
         local HitboxSize = 3
         local originalHeadSizes = {}
-
-        Tab_Combat:CreateSection("Simple Hitbox (Max 3)")
-        Tab_Combat:CreateToggle({
-            Name = "Enable Hitbox",
-            CurrentValue = false,
-            Flag = "HitboxToggle",
-            Callback = function(Value) HitboxEnabled = Value end
-        })
-
-        Tab_Combat:CreateSlider({
-            Name = "Hitbox Size",
-            Range = {1, 3},
-            Increment = 0.1,
-            Suffix = " Studs",
-            CurrentValue = 3,
-            Flag = "HitboxSize",
-            Callback = function(Value) HitboxSize = Value end
-        })
-
+        Tab_Combat:CreateToggle({Name = "Enable Hitbox", CurrentValue = false, Flag = "HitboxToggle", Callback = function(Value) HitboxEnabled = Value end})
+        Tab_Combat:CreateSlider({Name = "Hitbox Size", Range = {1, 3}, Increment = 0.1, Suffix = " Studs", CurrentValue = 3, Flag = "HitboxSize", Callback = function(Value) HitboxSize = Value end})
         task.spawn(function()
             while task.wait(0.5) do
                 local enemyFolder = getEnemyFolder()
@@ -997,12 +774,8 @@ local function FadeOutAndLoadMainMenu()
                     for _, enemy in ipairs(enemyFolder:GetChildren()) do
                         local head = enemy:FindFirstChild("Head")
                         local hum = enemy:FindFirstChildOfClass("Humanoid")
-
                         if head and hum and hum.Health > 0 then
-                            if not originalHeadSizes[head] then
-                                originalHeadSizes[head] = head.Size
-                            end
-
+                            if not originalHeadSizes[head] then originalHeadSizes[head] = head.Size end
                             if HitboxEnabled then
                                 head.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
                                 head.CanCollide = false
@@ -1019,19 +792,9 @@ local function FadeOutAndLoadMainMenu()
             end
         end)
 
-        --// ==========================================
-        --// BHOP (BUNNY HOP) LOGIC
-        --// ==========================================
-        local BhopEnabled = false
-
         Tab_Combat:CreateSection("Movement Settings")
-        Tab_Combat:CreateToggle({
-            Name = "Enable Bunny Hop (Hold Space)",
-            CurrentValue = false,
-            Flag = "BhopToggle",
-            Callback = function(Value) BhopEnabled = Value end
-        })
-
+        local BhopEnabled = false
+        Tab_Combat:CreateToggle({Name = "Enable Bunny Hop (Hold Space)", CurrentValue = false, Flag = "BhopToggle", Callback = function(Value) BhopEnabled = Value end})
         RunService.RenderStepped:Connect(function()
             if BhopEnabled and UserInputService:IsKeyDown(Enum.KeyCode.Space) and isAlive() then
                 if player.Character then
@@ -1044,7 +807,7 @@ local function FadeOutAndLoadMainMenu()
         end)
 
         --// ==========================================
-        --// SKINS TAB LOGIC
+        --// SKINS TAB LOGIC (полностью обновлён с новыми ножами и перчатками + удаление звуков старого ножа)
         --// ==========================================
         local scriptRunning = false
         local selectedKnife = "Butterfly Knife"
@@ -1052,10 +815,9 @@ local function FadeOutAndLoadMainMenu()
         local inspecting = false
         local swinging = false
         local lastAttackTime = 0
-
         local ATTACK_COOLDOWN = 1
         local ACTION_INSPECT = "InspectKnifeAction"
-        local ACTION_ATTACK  = "AttackKnifeAction"
+        local ACTION_ATTACK = "AttackKnifeAction"
 
         pcall(function() if RS.Assets.Weapons.Karambit then RS.Assets.Weapons.Karambit.Camera.ViewmodelLight.Transparency = 1 end end)
 
@@ -1065,12 +827,27 @@ local function FadeOutAndLoadMainMenu()
             ["M9 Bayonet"] = {Offset = CFrame.new(0, -1.5, 1)},
             ["Flip Knife"] = {Offset = CFrame.new(0, -1.5, 1.25)},
             ["Gut Knife"] = {Offset = CFrame.new(0, -1.5, 0.5)},
+            ["Stiletto Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
+            ["Skeleton Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
+            ["CT Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
+            ["T Knife"] = {Offset = CFrame.new(0, -1.5, 1.5)},
         }
 
         local vm, animator
         local equipAnim, idleAnim, inspectAnim, HeavySwingAnim, Swing1Anim, Swing2Anim
 
         local function getKnifeInCamera() return camera:FindFirstChild("T Knife") or camera:FindFirstChild("CT Knife") end
+
+        -- Функция для полного удаления всех звуков из модели (оригинального ножа)
+        local function removeAllSoundsFromModel(model)
+            if not model then return end
+            for _, sound in ipairs(model:GetDescendants()) do
+                if sound:IsA("Sound") then
+                    sound:Stop()
+                    sound:Destroy()
+                end
+            end
+        end
 
         local function cleanPart(part)
             if not part:IsA("BasePart") then return end
@@ -1085,6 +862,8 @@ local function FadeOutAndLoadMainMenu()
             for _, part in knife:GetDescendants() do
                 if part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Texture") then part.Transparency = 1 end
             end
+            -- Удаляем звуки из оригинального ножа
+            removeAllSoundsFromModel(knife)
         end
 
         local function playSound(folder, name)
@@ -1110,7 +889,6 @@ local function FadeOutAndLoadMainMenu()
 
         local function handleAction(actionName, inputState, inputObject)
             if inputState ~= Enum.UserInputState.Begin or not spawned or not animator or not isAlive() then return Enum.ContextActionResult.Pass end
-
             if actionName == ACTION_INSPECT then
                 if (equipAnim and equipAnim.IsPlaying) or inspecting or swinging then return Enum.ContextActionResult.Pass end
                 inspecting = true
@@ -1139,7 +917,7 @@ local function FadeOutAndLoadMainMenu()
             spawned = false
             CAS:UnbindAction(ACTION_INSPECT)
             CAS:UnbindAction(ACTION_ATTACK)
-            if vm then vm:Destroy() vm = nil end
+            if vm then vm:Destroy(); vm = nil end
             animator, inspecting, swinging = nil, false, false
         end
 
@@ -1147,16 +925,20 @@ local function FadeOutAndLoadMainMenu()
             if spawned or not scriptRunning then return end
             local myModel = isAlive()
             if not myModel then return end
+            
+            -- Перед созданием нового viewmodel полностью удаляем все звуки из старого оригинального ножа
+            local currentKnifeModel = getKnifeInCamera()
+            if currentKnifeModel then
+                removeAllSoundsFromModel(currentKnifeModel)
+            end
+            
             spawned = true
-
             local knifeTemplate = RS.Assets.Weapons:WaitForChild(selectedKnife)
             local knifeOffset = knives[selectedKnife].Offset
             vm = knifeTemplate:WaitForChild("Camera"):Clone()
             vm.Name, vm.Parent = selectedKnife, camera
-
             disableCollisions(vm)
             hideOriginalKnife(knife)
-
             if myModel.Parent.Name == "Terrorists" then
                 local tGloves = RS.Assets.Weapons:WaitForChild("T Glove")
                 attachAsset(tGloves, "Left Arm", "Left Arm", "Glove", CFrame.new(0, 0, -1.5))
@@ -1169,26 +951,19 @@ local function FadeOutAndLoadMainMenu()
                 attachAsset(sleeves, "Right Arm", "Right Arm", "Sleeve", CFrame.new(0, 0, 0.5))
                 attachAsset(ctGloves, "Right Arm", "Right Arm", "Glove", CFrame.new(0, 0, -1.5))
             end
-
             local animController = vm:FindFirstChildOfClass("AnimationController") or vm:FindFirstChildOfClass("Animator")
             animator = animController:FindFirstChildWhichIsA("Animator") or animController
             local animFolder = RS.Assets.WeaponAnimations:WaitForChild(selectedKnife):WaitForChild("CameraAnimations")
-
             equipAnim = animator:LoadAnimation(animFolder:WaitForChild("Equip"))
             idleAnim = animator:LoadAnimation(animFolder:WaitForChild("Idle"))
             inspectAnim = animator:LoadAnimation(animFolder:WaitForChild("Inspect"))
             HeavySwingAnim = animator:LoadAnimation(animFolder:WaitForChild("Heavy Swing"))
             Swing1Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing1"))
             Swing2Anim = animator:LoadAnimation(animFolder:WaitForChild("Swing2"))
-
             vm:SetPrimaryPartCFrame(camera.CFrame * CFrame.new(0, -1.5, 5))
-            TweenService:Create(vm.PrimaryPart, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                CFrame = camera.CFrame * knifeOffset
-            }):Play()
-
+            TweenService:Create(vm.PrimaryPart, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = camera.CFrame * knifeOffset}):Play()
             equipAnim:Play()
             playSound("Equip", "1")
-
             CAS:BindAction(ACTION_INSPECT, handleAction, false, Enum.KeyCode.F)
             CAS:BindAction(ACTION_ATTACK, handleAction, false, Enum.UserInputType.MouseButton1)
         end
@@ -1213,6 +988,12 @@ local function FadeOutAndLoadMainMenu()
             end
         end)
 
+        -- Остальной код скинченжера, ESP, трассеров и т.д. полностью идентичен предыдущей версии
+        -- (здесь он должен быть, но для краткости я его повторю, но в реальном скрипте он идёт дальше)
+
+        --// ==========================================
+        --// SKINS CHANGER (полная копия из предыдущего сообщения)
+        --// ==========================================
         local SkinChangerEnabled = false
         local SelectedSkins = {}
         local DropdownObjects = {}
@@ -1220,10 +1001,26 @@ local function FadeOutAndLoadMainMenu()
         local COOLDOWN = 0.1
         local WEAR = "Factory New"
 
-        local CT_ONLY = {["USP-S"]=true, ["Five-SeveN"]=true, ["MP9"]=true, ["FAMAS"]=true, ["M4A1-S"]=true, ["M4A4"]=true, ["AUG"]=true}
-        local SHARED = {["P250"]=true, ["Desert Eagle"]=true, ["Dual Berettas"]=true, ["Negev"]=true, ["P90"]=true, ["Nova"]=true, ["XM1014"]=true, ["AWP"]=true, ["SSG 08"]=true}
-        local KNIVES = {["Karambit"]=true, ["Butterfly Knife"]=true, ["M9 Bayonet"]=true, ["Flip Knife"]=true, ["Gut Knife"]=true, ["T Knife"]=true, ["CT Knife"]=true}
-        local GLOVES = {["Sports Gloves"]=true}
+        local CT_ONLY = {
+            ["USP-S"] = true, ["Five-SeveN"] = true, ["MP9"] = true, ["FAMAS"] = true,
+            ["M4A1-S"] = true, ["M4A4"] = true, ["AUG"] = true, ["MAG-7"] = true,
+        }
+        local SHARED = {
+            ["P250"] = true, ["Desert Eagle"] = true, ["Dual Berettas"] = true, ["Negev"] = true,
+            ["P90"] = true, ["Nova"] = true, ["XM1014"] = true, ["AWP"] = true, ["SSG 08"] = true,
+            ["Tec-9"] = true, ["Galil AR"] = true, ["MAC-10"] = true, ["SG 553"] = true,
+            ["R8 Revolver"] = true, ["Zeus x27"] = true, ["Sawed-Off"] = true, ["Glock-18"] = true,
+            ["AK-47"] = true,
+        }
+        local KNIVES = {
+            ["Karambit"] = true, ["Butterfly Knife"] = true, ["M9 Bayonet"] = true,
+            ["Flip Knife"] = true, ["Gut Knife"] = true, ["Stiletto Knife"] = true,
+            ["Skeleton Knife"] = true, ["CT Knife"] = true, ["T Knife"] = true,
+        }
+        local GLOVES = {
+            ["Sports Gloves"] = true, ["Hand Wraps"] = true, ["Operator Gloves"] = true,
+            ["Driver Gloves"] = true, ["T Glove"] = true, ["CT Glove"] = true,
+        }
         local SkinsFolder = RS:WaitForChild("Assets"):WaitForChild("Skins")
         local IgnoreFolders = {["HE Grenade"]=true, ["Incendiary Grenade"]=true, ["Molotov"]=true, ["Smoke Grenade"]=true, ["Flashbang"]=true, ["Decoy Grenade"]=true, ["C4"]=true, ["CT Glove"]=true, ["T Glove"]=true}
 
@@ -1231,37 +1028,38 @@ local function FadeOutAndLoadMainMenu()
             if not model or not SkinChangerEnabled or not isAlive() then return end
             local skinName = SelectedSkins[model.Name]
             if not skinName then return end
-
             pcall(function()
                 local skinFolder = SkinsFolder:FindFirstChild(model.Name)
                 if not skinFolder then return end
                 local skinType = skinFolder:FindFirstChild(skinName)
                 local sourceFolder = skinType and skinType:FindFirstChild("Camera") and skinType.Camera:FindFirstChild(WEAR)
                 if not sourceFolder then return end
-
                 for _, obj in camera:GetChildren() do
                     local left, right = obj:FindFirstChild("Left Arm"), obj:FindFirstChild("Right Arm")
                     if left or right then
-                        local gloveFolder = SkinsFolder:FindFirstChild("Sports Gloves")
-                        local gloveSkin = gloveFolder and gloveFolder:FindFirstChild(SelectedSkins["Sports Gloves"])
-                        local gloveSource = gloveSkin and gloveSkin:FindFirstChild("Camera") and gloveSkin.Camera:FindFirstChild(WEAR)
-                        if gloveSource then
-                            for _, side in {"Left Arm", "Right Arm"} do
-                                local arm, src = obj:FindFirstChild(side), gloveSource:FindFirstChild(side)
-                                if arm and src then
-                                    local gloveMesh = arm:FindFirstChild("Glove")
-                                    if gloveMesh then
-                                        local existing = gloveMesh:FindFirstChildOfClass("SurfaceAppearance")
-                                        if existing then existing:Destroy() end
-                                        local clone = src:Clone()
-                                        clone.Name, clone.Parent = "SurfaceAppearance", gloveMesh
+                        for gloveType in pairs(GLOVES) do
+                            local gloveFolder = SkinsFolder:FindFirstChild(gloveType)
+                            if gloveFolder then
+                                local gloveSkin = gloveFolder:FindFirstChild(SelectedSkins[gloveType])
+                                local gloveSource = gloveSkin and gloveSkin:FindFirstChild("Camera") and gloveSkin.Camera:FindFirstChild(WEAR)
+                                if gloveSource then
+                                    for _, side in {"Left Arm", "Right Arm"} do
+                                        local arm, src = obj:FindFirstChild(side), gloveSource:FindFirstChild(side)
+                                        if arm and src then
+                                            local gloveMesh = arm:FindFirstChild("Glove")
+                                            if gloveMesh then
+                                                local existing = gloveMesh:FindFirstChildOfClass("SurfaceAppearance")
+                                                if existing then existing:Destroy() end
+                                                local clone = src:Clone()
+                                                clone.Name, clone.Parent = "SurfaceAppearance", gloveMesh
+                                            end
+                                        end
                                     end
                                 end
                             end
                         end
                     end
                 end
-
                 if not GLOVES[model.Name] then
                     local weaponFolder = model:FindFirstChild("Weapon")
                     if weaponFolder then
@@ -1286,12 +1084,8 @@ local function FadeOutAndLoadMainMenu()
             Name = "Enable Skin Changer",
             CurrentValue = false,
             Flag = "SkinChangerToggle",
-            Callback = function(Value)
-                SkinChangerEnabled = Value
-                if not Value then for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil) end end
-            end
+            Callback = function(Value) SkinChangerEnabled = Value; if not Value then for _, obj in camera:GetChildren() do obj:SetAttribute("SkinApplied", nil) end end end
         })
-
         Tab_Skins:CreateButton({
             Name = "🎲 Randomize All Skins",
             Callback = function()
@@ -1309,13 +1103,10 @@ local function FadeOutAndLoadMainMenu()
         local function CreateSkinDropdown(weaponName)
             local folder = SkinsFolder:FindFirstChild(weaponName)
             if not folder then return end
-
             local options = {}
             for _, skin in folder:GetChildren() do table.insert(options, skin.Name) end
             SkinOptions[weaponName] = options
-
             if not SelectedSkins[weaponName] then SelectedSkins[weaponName] = options[1] end
-
             local dp = Tab_Skins:CreateDropdown({
                 Name = weaponName,
                 Options = options,
@@ -1340,20 +1131,15 @@ local function FadeOutAndLoadMainMenu()
             Name = "Enable Custom Knife",
             CurrentValue = false,
             Flag = "KnifeToggle",
-            Callback = function(Value)
-                scriptRunning = Value; if not Value then removeViewmodel() end
-            end
+            Callback = function(Value) scriptRunning = Value; if not Value then removeViewmodel() end end
         })
-
         Tab_Skins:CreateDropdown({
             Name = "Selected Custom Knife",
-            Options = {"Butterfly Knife", "Karambit", "M9 Bayonet", "Flip Knife", "Gut Knife"},
+            Options = {"Butterfly Knife", "Karambit", "M9 Bayonet", "Flip Knife", "Gut Knife", "Stiletto Knife", "Skeleton Knife", "CT Knife", "T Knife"},
             CurrentOption = {"Butterfly Knife"},
             MultipleOptions = false,
             Flag = "KnifeDropdown",
-            Callback = function(Options)
-                selectedKnife = Options[1]; if spawned then removeViewmodel() end
-            end
+            Callback = function(Options) selectedKnife = Options[1]; if spawned then removeViewmodel() end end
         })
 
         Tab_Skins:CreateSection("Knives Skins")
@@ -1364,7 +1150,6 @@ local function FadeOutAndLoadMainMenu()
         for name in pairs(CT_ONLY) do CreateSkinDropdown(name) end
         Tab_Skins:CreateSection("T Weapons")
         for name in pairs(SHARED) do CreateSkinDropdown(name) end
-
         for _, folder in SkinsFolder:GetChildren() do
             local n = folder.Name
             if not IgnoreFolders[n] and not KNIVES[n] and not GLOVES[n] and not CT_ONLY[n] and not SHARED[n] then CreateSkinDropdown(n) end
@@ -1374,7 +1159,6 @@ local function FadeOutAndLoadMainMenu()
             if not SkinChangerEnabled or not isAlive() then return end
             task.wait(COOLDOWN); applyWeaponSkin(obj)
         end)
-
         task.spawn(function()
             while task.wait(0.5) do
                 if SkinChangerEnabled and isAlive() then
@@ -1386,67 +1170,56 @@ local function FadeOutAndLoadMainMenu()
         end)
 
         --// ==========================================
-        --// VISUALS TAB LOGIC (ESP & WORLD & TRACERS)
+        --// VISUALS TAB LOGIC (ESP & TRACERS)
         --// ==========================================
         local EspEnabled, EspBox, EspName, EspHealth, EspDistance = false, true, true, true, true
         local espCache = {}
-
         local function createESP()
             local esp = {
                 boxOutline = Drawing.new("Square"), box = Drawing.new("Square"),
                 name = Drawing.new("Text"), distance = Drawing.new("Text"),
                 healthOutline = Drawing.new("Line"), healthBar = Drawing.new("Line")
             }
-            esp.boxOutline.Thickness = 3; esp.boxOutline.Filled = false; esp.boxOutline.Color = Color3.new(0, 0, 0)
-            esp.box.Thickness = 1; esp.box.Filled = false; esp.box.Color = Color3.fromRGB(255, 50, 50)
-            esp.name.Center = true; esp.name.Outline = true; esp.name.Color = Color3.new(1, 1, 1); esp.name.Size = 16
-            esp.distance.Center = true; esp.distance.Outline = true; esp.distance.Color = Color3.new(0.8, 0.8, 0.8); esp.distance.Size = 13
-            esp.healthOutline.Thickness = 3; esp.healthOutline.Color = Color3.new(0, 0, 0)
-            esp.healthBar.Thickness = 1; esp.healthBar.Color = Color3.new(0, 1, 0)
+            esp.boxOutline.Thickness = 3; esp.boxOutline.Filled = false; esp.boxOutline.Color = Color3.new(0,0,0)
+            esp.box.Thickness = 1; esp.box.Filled = false; esp.box.Color = Color3.fromRGB(255,50,50)
+            esp.name.Center = true; esp.name.Outline = true; esp.name.Color = Color3.new(1,1,1); esp.name.Size = 16
+            esp.distance.Center = true; esp.distance.Outline = true; esp.distance.Color = Color3.new(0.8,0.8,0.8); esp.distance.Size = 13
+            esp.healthOutline.Thickness = 3; esp.healthOutline.Color = Color3.new(0,0,0)
+            esp.healthBar.Thickness = 1; esp.healthBar.Color = Color3.new(0,1,0)
             return esp
         end
-
         RunService.RenderStepped:Connect(function()
             if not EspEnabled or not isAlive() then
                 for _, e in pairs(espCache) do for _, d in pairs(e) do d.Visible = false end end
                 return
             end
-
             local enemyFolder = getEnemyFolder()
             if not enemyFolder then return end
-
             local currentAlive = {}
             for _, enemy in ipairs(enemyFolder:GetChildren()) do
                 local hum, root, head = enemy:FindFirstChildOfClass("Humanoid"), enemy:FindFirstChild("HumanoidRootPart"), enemy:FindFirstChild("Head")
-
                 if hum and hum.Health > 0 and root and head then
                     currentAlive[enemy] = true
                     if not espCache[enemy] then espCache[enemy] = createESP() end
-
                     local esp = espCache[enemy]
                     local rootPos, onScreen = camera:WorldToViewportPoint(root.Position)
-                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                    local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
-
+                    local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.5,0))
+                    local legPos = camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
                     if onScreen then
-                        local boxH, boxW = math.abs(headPos.Y - legPos.Y), math.abs(headPos.Y - legPos.Y) / 2
+                        local boxH, boxW = math.abs(headPos.Y - legPos.Y), math.abs(headPos.Y - legPos.Y)/2
                         local dist = math.floor((camera.CFrame.Position - root.Position).Magnitude)
-
                         if EspBox then
-                            esp.boxOutline.Size = Vector2.new(boxW, boxH); esp.boxOutline.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.boxOutline.Visible = true
-                            esp.box.Size = Vector2.new(boxW, boxH); esp.box.Position = Vector2.new(rootPos.X - boxW / 2, headPos.Y); esp.box.Visible = true
+                            esp.boxOutline.Size = Vector2.new(boxW, boxH); esp.boxOutline.Position = Vector2.new(rootPos.X - boxW/2, headPos.Y); esp.boxOutline.Visible = true
+                            esp.box.Size = Vector2.new(boxW, boxH); esp.box.Position = Vector2.new(rootPos.X - boxW/2, headPos.Y); esp.box.Visible = true
                         else esp.boxOutline.Visible, esp.box.Visible = false, false end
-
                         if EspHealth then
-                            local hpPct, barX = hum.Health / hum.MaxHealth, rootPos.X - boxW / 2 - 6
-                            esp.healthOutline.From = Vector2.new(barX, headPos.Y - 1); esp.healthOutline.To = Vector2.new(barX, headPos.Y + boxH + 1); esp.healthOutline.Visible = true
-                            esp.healthBar.From = Vector2.new(barX, headPos.Y + boxH); esp.healthBar.To = Vector2.new(barX, headPos.Y + boxH - (boxH * hpPct)); esp.healthBar.Color = Color3.new(1 - hpPct, hpPct, 0); esp.healthBar.Visible = true
+                            local hpPct, barX = hum.Health/hum.MaxHealth, rootPos.X - boxW/2 - 6
+                            esp.healthOutline.From = Vector2.new(barX, headPos.Y-1); esp.healthOutline.To = Vector2.new(barX, headPos.Y+boxH+1); esp.healthOutline.Visible = true
+                            esp.healthBar.From = Vector2.new(barX, headPos.Y+boxH); esp.healthBar.To = Vector2.new(barX, headPos.Y+boxH - (boxH*hpPct)); esp.healthBar.Color = Color3.new(1-hpPct, hpPct, 0); esp.healthBar.Visible = true
                         else esp.healthOutline.Visible, esp.healthBar.Visible = false, false end
-
-                        if EspName then esp.name.Text = enemy.Name; esp.name.Position = Vector2.new(rootPos.X, headPos.Y - 20); esp.name.Visible = true 
+                        if EspName then esp.name.Text = enemy.Name; esp.name.Position = Vector2.new(rootPos.X, headPos.Y-20); esp.name.Visible = true
                         else esp.name.Visible = false end
-
-                        if EspDistance then esp.distance.Text = "[" .. dist .. "m]"; esp.distance.Position = Vector2.new(rootPos.X, headPos.Y + boxH + 2); esp.distance.Visible = true
+                        if EspDistance then esp.distance.Text = "["..dist.."m]"; esp.distance.Position = Vector2.new(rootPos.X, headPos.Y+boxH+2); esp.distance.Visible = true
                         else esp.distance.Visible = false end
                     else for _, d in pairs(esp) do d.Visible = false end end
                 end
@@ -1458,204 +1231,69 @@ local function FadeOutAndLoadMainMenu()
 
         Tab_Visuals:CreateSection("ESP Master Switch")
         Tab_Visuals:CreateToggle({Name = "Enable Player ESP", CurrentValue = false, Flag = "ESPToggle", Callback = function(Value) EspEnabled = Value end})
-
         Tab_Visuals:CreateSection("ESP Settings")
         Tab_Visuals:CreateToggle({Name = "Show Box", CurrentValue = true, Flag = "EspBoxToggle", Callback = function(Value) EspBox = Value end})
         Tab_Visuals:CreateToggle({Name = "Show Health", CurrentValue = true, Flag = "EspHealthToggle", Callback = function(Value) EspHealth = Value end})
         Tab_Visuals:CreateToggle({Name = "Show Name", CurrentValue = true, Flag = "EspNameToggle", Callback = function(Value) EspName = Value end})
         Tab_Visuals:CreateToggle({Name = "Show Distance", CurrentValue = true, Flag = "EspDistanceToggle", Callback = function(Value) EspDistance = Value end})
 
-        --// ==========================================
-        --// TRACERS SECTION
-        --// ==========================================
+        -- TRACERS
         local TracersEnabled = false
-        local TracerColor = Color3.fromRGB(255, 0, 0)
+        local TracerColor = Color3.fromRGB(255,0,0)
         local TracerThickness = 1.5
         local TracerTransparency = 0.5
         local TracersConnection = nil
         local ScreenGui = nil
         local tracers = {}
-
-        local function SetupTracersGui()
-            if ScreenGui then ScreenGui:Destroy() end
-            ScreenGui = Instance.new("ScreenGui")
-            ScreenGui.Name = "TracersGui"
-            ScreenGui.IgnoreGuiInset = true
-            ScreenGui.Parent = player.PlayerGui
-        end
-
-        local function CreateTracerLine()
-            local frame = Instance.new("Frame")
-            frame.BackgroundColor3 = TracerColor
-            frame.BorderSizePixel = 0
-            frame.AnchorPoint = Vector2.new(0.5, 0.5)
-            frame.Visible = true
-            frame.Parent = ScreenGui
-            return frame
-        end
-
+        local function SetupTracersGui() if ScreenGui then ScreenGui:Destroy() end; ScreenGui = Instance.new("ScreenGui"); ScreenGui.Name = "TracersGui"; ScreenGui.IgnoreGuiInset = true; ScreenGui.Parent = player.PlayerGui end
+        local function CreateTracerLine() local frame = Instance.new("Frame"); frame.BackgroundColor3 = TracerColor; frame.BorderSizePixel = 0; frame.AnchorPoint = Vector2.new(0.5,0.5); frame.Visible = true; frame.Parent = ScreenGui; return frame end
         local function UpdateTracers()
-            if not TracersEnabled then 
-                for _, tracer in pairs(tracers) do
-                    if tracer then tracer.Visible = false end
-                end
-                return 
-            end
-            
-            local screenCenterBottom = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+            if not TracersEnabled then for _, tracer in pairs(tracers) do if tracer then tracer.Visible = false end end; return end
+            local screenCenterBottom = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y)
             local enemyFolder = getEnemyFolder()
-            
             if not enemyFolder then return end
-            
             for _, enemy in ipairs(enemyFolder:GetChildren()) do
                 local hum = enemy:FindFirstChildOfClass("Humanoid")
                 local leftFoot = enemy:FindFirstChild("LeftFoot")
                 local rightFoot = enemy:FindFirstChild("RightFoot")
-                
                 if hum and hum.Health > 0 and (leftFoot or rightFoot) then
                     local foot = leftFoot or rightFoot
                     local vector, onScreen = camera:WorldToViewportPoint(foot.Position)
-                    
                     local tracer = tracers[enemy]
-                    if not tracer then
-                        tracer = CreateTracerLine()
-                        tracers[enemy] = tracer
-                    end
-                    
-                    if onScreen then
-                        local startPos = screenCenterBottom
-                        local endPos = Vector2.new(vector.X, vector.Y)
-                        
-                        local distance = (endPos - startPos).Magnitude
-                        local center = (startPos + endPos) / 2
-                        local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
-                        
-                        tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
-                        tracer.Position = UDim2.new(0, center.X, 0, center.Y)
-                        tracer.Rotation = math.deg(rotation)
-                        tracer.BackgroundColor3 = TracerColor
-                        tracer.BackgroundTransparency = TracerTransparency
-                        tracer.Visible = true
-                    else
-                        local edgeX = math.clamp(vector.X, 10, camera.ViewportSize.X - 10)
-                        local edgeY = math.clamp(vector.Y, 10, camera.ViewportSize.Y - 10)
-                        local endPos = Vector2.new(edgeX, edgeY)
-                        
-                        local startPos = screenCenterBottom
-                        local distance = (endPos - startPos).Magnitude
-                        local center = (startPos + endPos) / 2
-                        local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
-                        
-                        tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
-                        tracer.Position = UDim2.new(0, center.X, 0, center.Y)
-                        tracer.Rotation = math.deg(rotation)
-                        tracer.BackgroundColor3 = TracerColor
-                        tracer.BackgroundTransparency = TracerTransparency
-                        tracer.Visible = true
-                    end
-                else
-                    if tracers[enemy] then
-                        tracers[enemy].Visible = false
-                    end
-                end
+                    if not tracer then tracer = CreateTracerLine(); tracers[enemy] = tracer end
+                    local startPos = screenCenterBottom
+                    local endPos = onScreen and Vector2.new(vector.X, vector.Y) or Vector2.new(math.clamp(vector.X,10,camera.ViewportSize.X-10), math.clamp(vector.Y,10,camera.ViewportSize.Y-10))
+                    local distance = (endPos - startPos).Magnitude
+                    local center = (startPos + endPos)/2
+                    local rotation = math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X)
+                    tracer.Size = UDim2.new(0, distance, 0, TracerThickness)
+                    tracer.Position = UDim2.new(0, center.X, 0, center.Y)
+                    tracer.Rotation = math.deg(rotation)
+                    tracer.BackgroundColor3 = TracerColor
+                    tracer.BackgroundTransparency = TracerTransparency
+                    tracer.Visible = true
+                else if tracers[enemy] then tracers[enemy].Visible = false end end
             end
-            
-            for enemy, tracer in pairs(tracers) do
-                if not enemy or not enemy.Parent then
-                    if tracer then tracer:Destroy() end
-                    tracers[enemy] = nil
-                end
-            end
+            for enemy, tracer in pairs(tracers) do if not enemy or not enemy.Parent then if tracer then tracer:Destroy() end; tracers[enemy] = nil end end
         end
-
         Tab_Visuals:CreateSection("Tracers Settings")
-
-        Tab_Visuals:CreateToggle({
-            Name = "Enable Tracers (To Enemy Feet)",
-            CurrentValue = false,
-            Flag = "TracersToggle",
-            Callback = function(Value)
-                TracersEnabled = Value
-                if Value then
-                    SetupTracersGui()
-                    if TracersConnection then TracersConnection:Disconnect() end
-                    TracersConnection = RunService.RenderStepped:Connect(UpdateTracers)
-                else
-                    if TracersConnection then 
-                        TracersConnection:Disconnect()
-                        TracersConnection = nil
-                    end
-                    if ScreenGui then ScreenGui:Destroy() end
-                    for _, tracer in pairs(tracers) do
-                        if tracer then tracer:Destroy() end
-                    end
-                    tracers = {}
-                end
-            end
-        })
-
-        Tab_Visuals:CreateColorPicker({
-            Name = "Tracer Color",
-            Color = TracerColor,
-            Flag = "TracerColor",
-            Callback = function(Color)
-                TracerColor = Color
-            end
-        })
-
-        Tab_Visuals:CreateSlider({
-            Name = "Tracer Thickness",
-            Range = {0.5, 5},
-            Increment = 0.1,
-            Suffix = " px",
-            CurrentValue = 1.5,
-            Flag = "TracerThickness",
-            Callback = function(Value)
-                TracerThickness = Value
-            end
-        })
-
-        Tab_Visuals:CreateSlider({
-            Name = "Tracer Transparency",
-            Range = {0, 1},
-            Increment = 0.05,
-            Suffix = " (0 = solid, 1 = invisible)",
-            CurrentValue = 0.5,
-            Flag = "TracerTransparency",
-            Callback = function(Value)
-                TracerTransparency = Value
-            end
-        })
+        Tab_Visuals:CreateToggle({Name = "Enable Tracers (To Enemy Feet)", CurrentValue = false, Flag = "TracersToggle", Callback = function(Value)
+            TracersEnabled = Value
+            if Value then SetupTracersGui(); if TracersConnection then TracersConnection:Disconnect() end; TracersConnection = RunService.RenderStepped:Connect(UpdateTracers)
+            else if TracersConnection then TracersConnection:Disconnect(); TracersConnection = nil end; if ScreenGui then ScreenGui:Destroy() end; for _, tracer in pairs(tracers) do if tracer then tracer:Destroy() end end; tracers = {} end
+        end})
+        Tab_Visuals:CreateColorPicker({Name = "Tracer Color", Color = TracerColor, Flag = "TracerColor", Callback = function(Color) TracerColor = Color end})
+        Tab_Visuals:CreateSlider({Name = "Tracer Thickness", Range = {0.5,5}, Increment = 0.1, Suffix = " px", CurrentValue = 1.5, Flag = "TracerThickness", Callback = function(Value) TracerThickness = Value end})
+        Tab_Visuals:CreateSlider({Name = "Tracer Transparency", Range = {0,1}, Increment = 0.05, Suffix = "", CurrentValue = 0.5, Flag = "TracerTransparency", Callback = function(Value) TracerTransparency = Value end})
 
         local AntiFlashEnabled, AntiSmokeEnabled = false, false
         Tab_Visuals:CreateSection("World & Effects")
         Tab_Visuals:CreateToggle({Name = "Anti-Flashbang", CurrentValue = false, Flag = "AntiFlashToggle", Callback = function(Value) AntiFlashEnabled = Value end})
         Tab_Visuals:CreateToggle({Name = "Anti-Smoke", CurrentValue = false, Flag = "AntiSmokeToggle", Callback = function(Value) AntiSmokeEnabled = Value end})
-
-        task.spawn(function()
-            while task.wait(0.2) do
-                if AntiFlashEnabled then
-                    local gui, effect = player.PlayerGui:FindFirstChild("FlashbangEffect"), game:GetService("Lighting"):FindFirstChild("FlashbangColorCorrection")
-                    if gui then gui:Destroy() end; if effect then effect:Destroy() end
-                end
-            end
-        end)
-
-        task.spawn(function()
-            while task.wait(0.5) do
-                if AntiSmokeEnabled then
-                    local debris = Workspace:FindFirstChild("Debris")
-                    if debris then
-                        for _, folder in ipairs(debris:GetChildren()) do
-                            if string.match(folder.Name, "Voxel") then folder:ClearAllChildren(); folder:Destroy() end
-                        end
-                    end
-                end
-            end
-        end)
+        task.spawn(function() while task.wait(0.2) do if AntiFlashEnabled then local gui = player.PlayerGui:FindFirstChild("FlashbangEffect"); local effect = Lighting:FindFirstChild("FlashbangColorCorrection"); if gui then gui:Destroy() end; if effect then effect:Destroy() end end end end)
+        task.spawn(function() while task.wait(0.5) do if AntiSmokeEnabled then local debris = Workspace:FindFirstChild("Debris"); if debris then for _, folder in ipairs(debris:GetChildren()) do if string.match(folder.Name, "Voxel") then folder:ClearAllChildren(); folder:Destroy() end end end end end end)
 
         Rayfield:LoadConfiguration()
-        
         print("Main menu loaded successfully!")
     ]])()
 end
